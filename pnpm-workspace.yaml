@@ -1,0 +1,9 @@
+onlyBuiltDependencies:
+  - sharp
+  - core-js
+ignoredBuiltDependencies:
+  - unrs-resolver
+  - tesseract.js
+allowBuilds:
+  core-js: true
+  sharp: true
