@@ -57,7 +57,8 @@ function cellGrid(
         parts.push(line(x + gridPx, y, x, y + gridPx, color, 1, dash));
       }
       if (cell === "huigong") {
-        const inset = gridPx * 0.12;
+        // 内框取外框的一半（inset = gridPx/4），无十字辅助线
+        const inset = gridPx * 0.25;
         parts.push(
           `<rect x="${(x + inset).toFixed(1)}" y="${(y + inset).toFixed(1)}" width="${(gridPx - inset * 2).toFixed(1)}" height="${(gridPx - inset * 2).toFixed(1)}" fill="none" stroke="${esc(color)}" stroke-width="1" stroke-dasharray="3,2" />`,
         );

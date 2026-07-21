@@ -3,8 +3,7 @@ onlyBuiltDependencies:
   - core-js
 ignoredBuiltDependencies:
   - unrs-resolver
-  - tesseract.js
 allowBuilds:
   core-js: true
   sharp: true
-  tesseract.js: set this to true or false
+  tesseract.js: false

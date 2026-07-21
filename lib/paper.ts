@@ -360,6 +360,11 @@ const GUIDE_LINE_WIDTH = 0.5;
 /** 虚线引导线的 [短划, 间隙]。比旧的 [4,3]/[3,2] 更细碎，接近主流字帖的细虚线观感。 */
 const GUIDE_DASH: number[] = [2, 2];
 
+/** 回宫 / 回田 / 回米 / 回九 的内框缩进比例：内方 ≈ 外方 × 50%（实测参考字帖：外方
+ *  40px、内方 ~20px）。inset = 0.25 时内框「外缘到外缘」恰为外框外缘的一半——外框线
+ *  1px、内框线 0.5px，折半时两边边框正好抵消，无需额外补偿。 */
+const HUIGONG_INSET_RATIO = 0.25;
+
 /** 画一条经过中心 (cx,cy) 的虚线：通过动态调整 lineDashOffset，
  *  让中心点尽量落在「短划内部」而不是短划端点，避免中心交汇处出现突兀的深色小点。
  *  调用前需已 setLineDash / lineWidth。 */
@@ -397,6 +402,77 @@ function strokeDashedThroughCenter(
   ctx.lineDashOffset = prevOffset;
 }
 
+/** 画一个虚线矩形，用「单条连续路径」一次 stroke 完成。
+ *  关键：让短划周期整除边长（period = w / round(w/4)），于是沿周长走到每个角点
+ *  时相位都归 0——角点必为短划起点、上一段必以间隙收尾，即"上条间隙结尾、下条
+ *  短划开头"。既保持虚线首尾连续无缝，又保证"口"字四角永不落在间隙里。
+ *  正方形（本项目内框均为正方）下周期同时整除 h，四角全部对齐。
+ *  调用前需已设置 lineWidth / strokeStyle；dash 由本函数按边长自适应覆盖。 */
+function strokeDashedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): void {
+  const prevOffset = ctx.lineDashOffset;
+  const prevDash = ctx.getLineDash();
+  // 目标周期 ~4px（贴近原 GUIDE_DASH [2,2] 的观感）；取整使周期整除边长
+  const period = w / Math.max(1, Math.round(w / 4));
+  ctx.setLineDash([period / 2, period / 2]);
+  ctx.lineDashOffset = 0;
+  ctx.strokeRect(x, y, w, h);
+  ctx.setLineDash(prevDash);
+  ctx.lineDashOffset = prevOffset;
+}
+
+/** 田字十字（满格虚线十字）：横竖各一条贯穿中心的虚线。田字格 / 回田格 共用。
+ *  调用前需已 setLineDash / lineWidth / strokeStyle。 */
+function strokeTianCross(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+): void {
+  const cx = x + size / 2;
+  const cy = y + size / 2;
+  strokeDashedThroughCenter(ctx, cx, cy, cx, y, cx, y + size);
+  strokeDashedThroughCenter(ctx, cx, cy, x, cy, x + size, cy);
+}
+
+/** 米字（满格虚线十字 + 两条对角线）：田字十字 + 对角。米字格 / 回米格 共用。
+ *  调用前需已 setLineDash / lineWidth / strokeStyle。 */
+function strokeMiLines(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+): void {
+  strokeTianCross(ctx, x, y, size);
+  const cx = x + size / 2;
+  const cy = y + size / 2;
+  strokeDashedThroughCenter(ctx, cx, cy, x, y, x + size, y + size);
+  strokeDashedThroughCenter(ctx, cx, cy, x + size, y, x, y + size);
+}
+
+/** 九宫 3×3 虚线（两条竖线 + 两条横线，三等分）。九宫格 / 回九格 共用。
+ *  调用前需已 setLineDash / lineWidth / strokeStyle。 */
+function strokeJiugongLines(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+): void {
+  ctx.beginPath();
+  for (let i = 1; i < 3; i++) {
+    ctx.moveTo(x + (i * size) / 3, y);
+    ctx.lineTo(x + (i * size) / 3, y + size);
+    ctx.moveTo(x, y + (i * size) / 3);
+    ctx.lineTo(x + size, y + (i * size) / 3);
+  }
+  ctx.stroke();
+}
+
 /** 田字格：外框 + 十字虚线 */
 export function drawTianGrid(
   ctx: CanvasRenderingContext2D,
@@ -412,10 +488,7 @@ export function drawTianGrid(
 
   ctx.lineWidth = GUIDE_LINE_WIDTH;
   ctx.setLineDash(GUIDE_DASH);
-  const cx = x + size / 2;
-  const cy = y + size / 2;
-  strokeDashedThroughCenter(ctx, cx, cy, cx, y, cx, y + size);
-  strokeDashedThroughCenter(ctx, cx, cy, x, cy, x + size, cy);
+  strokeTianCross(ctx, x, y, size);
   ctx.setLineDash([]);
   ctx.restore();
 }
@@ -435,19 +508,12 @@ export function drawMiGrid(
 
   ctx.lineWidth = GUIDE_LINE_WIDTH;
   ctx.setLineDash(GUIDE_DASH);
-  const cx = x + size / 2;
-  const cy = y + size / 2;
-  // 十字
-  strokeDashedThroughCenter(ctx, cx, cy, cx, y, cx, y + size);
-  strokeDashedThroughCenter(ctx, cx, cy, x, cy, x + size, cy);
-  // 对角线
-  strokeDashedThroughCenter(ctx, cx, cy, x, y, x + size, y + size);
-  strokeDashedThroughCenter(ctx, cx, cy, x + size, y, x, y + size);
+  strokeMiLines(ctx, x, y, size);
   ctx.setLineDash([]);
   ctx.restore();
 }
 
-/** 回宫格：外框 + 内框 + 中线（用于结构练习） */
+/** 回宫格：外框 + 内框（形似"回"字，无十字辅助线，用于结构练习） */
 export function drawHuigongGrid(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -456,18 +522,7 @@ export function drawHuigongGrid(
   color: string = "#d1d5db",
 ): void {
   ctx.save();
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1;
-  ctx.strokeRect(x, y, size, size);
-
-  ctx.lineWidth = GUIDE_LINE_WIDTH;
-  const inset = size * 0.12;
-  ctx.setLineDash(GUIDE_DASH);
-  ctx.strokeRect(x + inset, y + inset, size - inset * 2, size - inset * 2);
-  const cx = x + size / 2;
-  const cy = y + size / 2;
-  strokeDashedThroughCenter(ctx, cx, cy, cx, y + inset, cx, y + size - inset);
-  strokeDashedThroughCenter(ctx, cx, cy, x + inset, cy, x + size - inset, cy);
+  strokeHuigongFrame(ctx, x, y, size, color);
   ctx.setLineDash([]);
   ctx.restore();
 }
@@ -501,14 +556,7 @@ export function drawJiugongGrid(
   ctx.strokeRect(x, y, size, size);
   ctx.lineWidth = GUIDE_LINE_WIDTH;
   ctx.setLineDash(GUIDE_DASH);
-  ctx.beginPath();
-  for (let i = 1; i < 3; i++) {
-    ctx.moveTo(x + (i * size) / 3, y);
-    ctx.lineTo(x + (i * size) / 3, y + size);
-    ctx.moveTo(x, y + (i * size) / 3);
-    ctx.lineTo(x + size, y + (i * size) / 3);
-  }
-  ctx.stroke();
+  strokeJiugongLines(ctx, x, y, size);
   ctx.setLineDash([]);
   ctx.restore();
 }
@@ -528,21 +576,29 @@ export function drawEssayGrid(
   ctx.restore();
 }
 
-/** 回宫内框（回田 / 回米 / 回九 共用）：外框（1px 实线）+ 内缩虚线框（细虚线） */
+/** 回字框（回宫 / 回田 / 回米 / 回九 共用的"回"）：外框 1px 实线 + 内缩虚线框。
+ *  内方比例由 HUIGONG_INSET_RATIO 统一控制（内方 ≈ 外方 × 50%）。
+ *  不做 save/restore，由调用方负责；返回时 lineDash 仍为 GUIDE_DASH。 */
 function strokeHuigongFrame(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   size: number,
   color: string,
-  inset: number,
 ): void {
+  const inset = size * HUIGONG_INSET_RATIO;
   ctx.strokeStyle = color;
   ctx.lineWidth = 1;
   ctx.strokeRect(x, y, size, size);
   ctx.lineWidth = GUIDE_LINE_WIDTH;
   ctx.setLineDash(GUIDE_DASH);
-  ctx.strokeRect(x + inset, y + inset, size - inset * 2, size - inset * 2);
+  strokeDashedRect(
+    ctx,
+    x + inset,
+    y + inset,
+    size - inset * 2,
+    size - inset * 2,
+  );
 }
 
 /** 回田格：回宫内框 + 田字十字（满格虚线十字） */
@@ -554,13 +610,8 @@ export function drawHuitianGrid(
   color: string = "#d1d5db",
 ): void {
   ctx.save();
-  const inset = size * 0.12;
-  strokeHuigongFrame(ctx, x, y, size, color, inset);
-  ctx.lineWidth = GUIDE_LINE_WIDTH;
-  const cx = x + size / 2;
-  const cy = y + size / 2;
-  strokeDashedThroughCenter(ctx, cx, cy, cx, y, cx, y + size);
-  strokeDashedThroughCenter(ctx, cx, cy, x, cy, x + size, cy);
+  strokeHuigongFrame(ctx, x, y, size, color);
+  strokeTianCross(ctx, x, y, size);
   ctx.setLineDash([]);
   ctx.restore();
 }
@@ -574,17 +625,8 @@ export function drawHuimiGrid(
   color: string = "#d1d5db",
 ): void {
   ctx.save();
-  const inset = size * 0.12;
-  strokeHuigongFrame(ctx, x, y, size, color, inset);
-  ctx.lineWidth = GUIDE_LINE_WIDTH;
-  const cx = x + size / 2;
-  const cy = y + size / 2;
-  // 十字
-  strokeDashedThroughCenter(ctx, cx, cy, cx, y, cx, y + size);
-  strokeDashedThroughCenter(ctx, cx, cy, x, cy, x + size, cy);
-  // 对角线
-  strokeDashedThroughCenter(ctx, cx, cy, x, y, x + size, y + size);
-  strokeDashedThroughCenter(ctx, cx, cy, x + size, y, x, y + size);
+  strokeHuigongFrame(ctx, x, y, size, color);
+  strokeMiLines(ctx, x, y, size);
   ctx.setLineDash([]);
   ctx.restore();
 }
@@ -598,17 +640,8 @@ export function drawHuijiuGrid(
   color: string = "#d1d5db",
 ): void {
   ctx.save();
-  const inset = size * 0.12;
-  strokeHuigongFrame(ctx, x, y, size, color, inset);
-  ctx.lineWidth = GUIDE_LINE_WIDTH;
-  ctx.beginPath();
-  for (let i = 1; i < 3; i++) {
-    ctx.moveTo(x + (i * size) / 3, y);
-    ctx.lineTo(x + (i * size) / 3, y + size);
-    ctx.moveTo(x, y + (i * size) / 3);
-    ctx.lineTo(x + size, y + (i * size) / 3);
-  }
-  ctx.stroke();
+  strokeHuigongFrame(ctx, x, y, size, color);
+  strokeJiugongLines(ctx, x, y, size);
   ctx.setLineDash([]);
   ctx.restore();
 }
@@ -630,14 +663,7 @@ export function drawYuanmiGrid(
   ctx.stroke();
   ctx.lineWidth = GUIDE_LINE_WIDTH;
   ctx.setLineDash(GUIDE_DASH);
-  const cx = x + size / 2;
-  const cy = y + size / 2;
-  // 十字
-  strokeDashedThroughCenter(ctx, cx, cy, cx, y, cx, y + size);
-  strokeDashedThroughCenter(ctx, cx, cy, x, cy, x + size, cy);
-  // 对角线
-  strokeDashedThroughCenter(ctx, cx, cy, x, y, x + size, y + size);
-  strokeDashedThroughCenter(ctx, cx, cy, x + size, y, x, y + size);
+  strokeMiLines(ctx, x, y, size);
   ctx.setLineDash([]);
   ctx.restore();
 }
