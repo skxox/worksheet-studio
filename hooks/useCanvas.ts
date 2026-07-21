@@ -1,12 +1,16 @@
-'use client';
+"use client";
 
-import { useRef, useEffect, useCallback } from 'react';
-import { setupHiDPICanvas } from '@/lib/canvas';
+import { useRef, useEffect, useCallback } from "react";
+import { setupHiDPICanvas } from "@/lib/canvas";
 
 interface UseCanvasOptions {
   width: number;
   height: number;
-  onDraw?: (ctx: CanvasRenderingContext2D, width: number, height: number) => void;
+  onDraw?: (
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+  ) => void;
 }
 
 /**

@@ -13,7 +13,7 @@ export interface PaperSize {
   height: number; // mm
 }
 
-export type ExportFormat = 'pdf' | 'svg' | 'png';
+export type ExportFormat = "pdf" | "svg" | "png";
 
 /** 预览/导出时统一使用的像素边距结构 */
 export interface MarginPx {
@@ -26,28 +26,28 @@ export interface MarginPx {
 // ==================== 纸张工厂 ====================
 
 export type PaperType =
-  | 'grid' // 方格纸
-  | 'line' // 横线纸
-  | 'dot' // 点阵纸
-  | 'cornell' // 康奈尔笔记
-  | 'staff' // 五线谱
-  | 'tian' // 田字格
-  | 'mi' // 米字格
-  | 'huigong' // 回宫格
-  | 'pinyin' // 拼音格（四线三格）
-  | 'essay'; // 作文格（红框方格）
+  | "grid" // 方格纸
+  | "line" // 横线纸
+  | "dot" // 点阵纸
+  | "cornell" // 康奈尔笔记
+  | "staff" // 五线谱
+  | "tian" // 田字格
+  | "mi" // 米字格
+  | "huigong" // 回宫格
+  | "pinyin" // 拼音格（四线三格）
+  | "essay"; // 作文格（红框方格）
 
 export interface PaperSettings {
   type: PaperType;
   size: PaperSize;
   gridSize: number; // mm
   lineColor: string;
-  lineStyle: 'solid' | 'dashed' | 'dotted';
+  lineStyle: "solid" | "dashed" | "dotted";
   lineWidth: number; // px
   margin: Margin;
-  theme: 'default' | 'warm' | 'cool';
+  theme: "default" | "warm" | "cool";
   bgColor: string; // 背景色（主题切换会同步）
-  texture: 'none' | 'fiber' | 'parchment'; // 背景纹理
+  texture: "none" | "fiber" | "parchment"; // 背景纹理
   watermark: string; // 水印文字
   watermarkColor: string;
   showPageNumber: boolean;
@@ -57,33 +57,33 @@ export interface PaperSettings {
 // ==================== 字帖工坊 ====================
 
 export type CopybookType =
-  | 'character' // 汉字字帖
-  | 'word' // 词组字帖
-  | 'paragraph' // 段落字帖
-  | 'stroke' // 笔画字帖
-  | 'pinyin' // 拼音字帖
-  | 'english-char' // 英文字母
-  | 'english-word' // 英文单词
-  | 'english-para' // 英文段落
-  | 'number' // 数字字帖
-  | 'control'; // 控笔练习
+  | "character" // 汉字字帖
+  | "word" // 词组字帖
+  | "paragraph" // 段落字帖
+  | "stroke" // 笔画字帖
+  | "pinyin" // 拼音字帖
+  | "english-char" // 英文字母
+  | "english-word" // 英文单词
+  | "english-para" // 英文段落
+  | "number" // 数字字帖
+  | "control"; // 控笔练习
 
 export type GridType =
-  | 'tian' // 田字格
-  | 'mi' // 米字格
-  | 'huigong' // 回宫格
-  | 'jiugong' // 九宫格
-  | 'essay' // 作文格（稿纸纯方格）
-  | 'huitian' // 回田格（回宫内框 + 田字十字）
-  | 'huimi' // 回米格（回宫内框 + 米字）
-  | 'huijiu' // 回九格（回宫内框 + 九宫 3×3）
-  | 'yuanmi'; // 圆米格（外圆 + 米字）
+  | "tian" // 田字格
+  | "mi" // 米字格
+  | "huigong" // 回宫格
+  | "jiugong" // 九宫格
+  | "essay" // 作文格（稿纸纯方格）
+  | "huitian" // 回田格（回宫内框 + 田字十字）
+  | "huimi" // 回米格（回宫内框 + 米字）
+  | "huijiu" // 回九格（回宫内框 + 九宫 3×3）
+  | "yuanmi"; // 圆米格（外圆 + 米字）
 
 export interface CopybookSettings {
   type: CopybookType;
   content: string;
   fontFamily: string;
-  fontWeight: 'normal' | 'bold';
+  fontWeight: "normal" | "bold";
 
   // —— 格子 ——
   gridType: GridType; // 田字格/米字格/回宫格/九宫格/作文格/回田格/回米格/回九格/圆米格
@@ -97,7 +97,7 @@ export interface CopybookSettings {
   vOffset: number; // 上下偏移 %（-50..50）
 
   // —— 描红 ——
-  renderMode: 'solid' | 'miao' | 'hollow';
+  renderMode: "solid" | "miao" | "hollow";
   solidCount: number; // 每行生成多少个可练习字；前 N 字作实心示范由 highlightFirst + highlightCount 控制
   groupSpacing: number; // 每字（拼音行 + 汉字行）块之间的间距 mm
   miaoColor: string; // 描红(空心)颜色
@@ -124,7 +124,7 @@ export interface CopybookSettings {
 export interface HandwritingSettings {
   content: string;
   fontFamily: string;
-  paperBackground: 'white' | 'lined' | 'grid' | 'dot' | 'yellow' | 'aged';
+  paperBackground: "white" | "lined" | "grid" | "dot" | "yellow" | "aged";
   distortionLevel: number; // 0-100, 字形变形程度
   positionChaos: number; // 0-100, 位置凌乱度
   strokeChaos: number; // 0-100, 笔画凌乱度（旋转）

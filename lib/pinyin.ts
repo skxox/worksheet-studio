@@ -1,4 +1,4 @@
-import { pinyin } from 'pinyin-pro';
+import { pinyin } from "pinyin-pro";
 
 const HAN_RE = /[一-鿿]/;
 
@@ -11,9 +11,9 @@ export function isHan(ch: string): boolean {
  * 取单个汉字带声调的默认拼音（如 "永" → "yǒng"）。多音字取 pinyin-pro 的默认读音；非汉字返回空串。
  */
 export function charToPinyin(char: string): string {
-  if (!char || !isHan(char)) return '';
-  const arr = pinyin(char, { toneType: 'symbol', type: 'array' });
-  return Array.isArray(arr) && arr.length > 0 ? arr[0] : '';
+  if (!char || !isHan(char)) return "";
+  const arr = pinyin(char, { toneType: "symbol", type: "array" });
+  return Array.isArray(arr) && arr.length > 0 ? arr[0] : "";
 }
 
 /** 取一段文本逐字拼音数组（非汉字位置为空串），与原文字符一一对应 */
@@ -33,8 +33,8 @@ export function charAllPinyins(char: string): string[] {
   const cached = ALL_CACHE.get(char);
   if (cached) return cached;
   const arr = pinyin(char, {
-    toneType: 'symbol',
-    type: 'array',
+    toneType: "symbol",
+    type: "array",
     multiple: true,
   });
   const out: string[] = [];

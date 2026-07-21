@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { Settings, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import { Settings, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface SettingsPanelProps {
   children: React.ReactNode;
@@ -21,7 +21,7 @@ export function SettingsPanel({ children }: SettingsPanelProps) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 z-30 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-lg lg:hidden"
+        className="bg-primary text-primary-foreground fixed right-4 bottom-4 z-30 flex items-center gap-2 rounded-full px-4 py-3 text-sm font-medium shadow-lg lg:hidden"
       >
         <Settings className="h-5 w-5" />
         设置
@@ -37,10 +37,10 @@ export function SettingsPanel({ children }: SettingsPanelProps) {
 
       <aside
         className={cn(
-          'space-y-6 overflow-y-auto bg-background p-4',
-          'fixed inset-y-0 right-0 z-50 w-[85vw] max-w-sm border-l shadow-xl transition-transform duration-200',
-          'lg:static lg:z-auto lg:min-h-0 lg:w-80 lg:max-w-none lg:translate-x-0 lg:border-l lg:border-t-0 lg:shadow-none',
-          open ? 'translate-x-0' : 'translate-x-full'
+          "bg-background space-y-6 overflow-y-auto p-4",
+          "fixed inset-y-0 right-0 z-50 w-[85vw] max-w-sm border-l shadow-xl transition-transform duration-200",
+          "lg:static lg:z-auto lg:min-h-0 lg:w-80 lg:max-w-none lg:translate-x-0 lg:border-t-0 lg:border-l lg:shadow-none",
+          open ? "translate-x-0" : "translate-x-full",
         )}
       >
         <div className="flex justify-end lg:hidden">

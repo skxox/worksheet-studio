@@ -4,20 +4,22 @@
  * 注：npmmirror 文件端点不允许该包，故用 jsDelivr；中国网络首取略慢，缓存后仅一次。
  */
 
-import type { CopybookSettings } from '@/types';
+import type { CopybookSettings } from "@/types";
 
 export interface CharStrokeData {
   strokes: string[];
   medians: number[][][];
 }
 
-const VERSION = '2.0.1';
+const VERSION = "2.0.1";
 const BASE = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@${VERSION}`;
 const REF_SIZE = 1024;
 
 const CACHE = new Map<string, CharStrokeData | null>();
 
-export async function fetchStroke(char: string): Promise<CharStrokeData | null> {
+export async function fetchStroke(
+  char: string,
+): Promise<CharStrokeData | null> {
   if (CACHE.has(char)) return CACHE.get(char)!;
   try {
     const res = await fetch(`${BASE}/${encodeURIComponent(char)}.json`);
@@ -74,7 +76,7 @@ export function drawCharStrokes(
   x: number,
   y: number,
   size: number,
-  opts: DrawStrokeOpts
+  opts: DrawStrokeOpts,
 ): boolean {
   const data = CACHE.get(char);
   if (!data) return false;
@@ -93,7 +95,9 @@ export function drawCharStrokes(
   for (let i = 0; i < upto; i++) {
     // 最后一笔（当前笔画）单独高亮
     ctx.fillStyle =
-      i === upto - 1 && opts.lastStrokeColor ? opts.lastStrokeColor : opts.color;
+      i === upto - 1 && opts.lastStrokeColor
+        ? opts.lastStrokeColor
+        : opts.color;
     ctx.fill(new Path2D(data.strokes[i]));
   }
   ctx.restore();
@@ -104,9 +108,9 @@ export function drawCharStrokes(
     const m = data.medians[idx];
     if (m && m[0]) {
       ctx.save();
-      ctx.fillStyle = opts.orderColor ?? '#d33b3b';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.fillStyle = opts.orderColor ?? "#d33b3b";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       ctx.font = `bold ${Math.max(10, size * 0.2)}px sans-serif`;
       const mx = x + off + m[0][0] * sc;
       const my = y + off + (yTop - m[0][1]) * sc;
@@ -119,5 +123,5 @@ export function drawCharStrokes(
 
 /** 当前字色（solid→color, miao→miaoColor, hollow→color） */
 export function resolveStrokeColor(settings: CopybookSettings): string {
-  return settings.renderMode === 'miao' ? settings.miaoColor : settings.color;
+  return settings.renderMode === "miao" ? settings.miaoColor : settings.color;
 }

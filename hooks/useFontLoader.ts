@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { ensureFontLoaded, fontWebFamily } from '@/lib/fonts';
+import { useEffect, useState } from "react";
+import { ensureFontLoaded, fontWebFamily } from "@/lib/fonts";
 
 /**
  * 确保某字体（按 key）已加载完毕。系统字体立即就绪；Web 字体等待 document.fonts.load。

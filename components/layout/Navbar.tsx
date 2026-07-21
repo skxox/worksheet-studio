@@ -17,13 +17,13 @@ export function Navbar() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+    <header className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-40 w-full border-b backdrop-blur">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4">
         <Link
           href="/"
           className="mr-4 flex items-center gap-2 font-bold tracking-tight"
         >
-          <Pen className="h-5 w-5 text-primary" />
+          <Pen className="text-primary h-5 w-5" />
           <span className="text-base">字帖大师</span>
         </Link>
         <nav className="flex items-center gap-1">

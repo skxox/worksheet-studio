@@ -260,7 +260,13 @@ export default function CopybookPage() {
       : "";
   });
   const [expandedPanel, setExpandedPanel] = useState<
-    null | "font" | "margin" | "miaoColor" | "lineColor" | "color" | "highlightColor"
+    | null
+    | "font"
+    | "margin"
+    | "miaoColor"
+    | "lineColor"
+    | "color"
+    | "highlightColor"
   >(null);
 
   // 字体面板的 tab / 自定义输入需跟随实际生效的 fontFamily。
@@ -273,7 +279,8 @@ export default function CopybookPage() {
     const f =
       typeof settings.fontFamily === "string" ? settings.fontFamily : "";
     setFontTab(
-      (LOCAL_FONT_KEYS as readonly string[]).includes(f) || f.startsWith("local:")
+      (LOCAL_FONT_KEYS as readonly string[]).includes(f) ||
+        f.startsWith("local:")
         ? "local"
         : "common",
     );
@@ -420,7 +427,7 @@ export default function CopybookPage() {
   const marginSummary = `${safeSettings.margin.top}, ${safeSettings.margin.right}, ${safeSettings.margin.bottom}, ${safeSettings.margin.left}`;
   const pinyinReadings = pinyinMenu ? charAllPinyins(pinyinMenu.char) : [];
   const pinyinCurrent = pinyinMenu
-    ? safeSettings.pinyinOverrides[pinyinMenu.char] ?? 0
+    ? (safeSettings.pinyinOverrides[pinyinMenu.char] ?? 0)
     : 0;
 
   return (
@@ -474,7 +481,7 @@ export default function CopybookPage() {
                 <div
                   role="listbox"
                   aria-label={`${pinyinMenu.char} 的读音`}
-                  className="absolute z-50 min-w-28 overflow-hidden rounded-md border border-input bg-background p-1 shadow-lg"
+                  className="border-input bg-background absolute z-50 min-w-28 overflow-hidden rounded-md border p-1 shadow-lg"
                   style={{ left: pinyinMenu.left, top: pinyinMenu.top }}
                 >
                   {pinyinReadings.map((py, i) => (
@@ -484,15 +491,15 @@ export default function CopybookPage() {
                       role="option"
                       aria-selected={i === pinyinCurrent}
                       onClick={() => pickPinyin(pinyinMenu.char, i)}
-                      className={`flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent ${
+                      className={`hover:bg-accent flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-left text-sm transition-colors ${
                         i === pinyinCurrent
-                          ? "bg-accent/60 font-medium text-foreground"
+                          ? "bg-accent/60 text-foreground font-medium"
                           : "text-muted-foreground"
                       }`}
                     >
                       <span>{py}</span>
                       {i === pinyinCurrent && (
-                        <Check className="h-3.5 w-3.5 text-primary" />
+                        <Check className="text-primary h-3.5 w-3.5" />
                       )}
                     </button>
                   ))}
@@ -502,7 +509,7 @@ export default function CopybookPage() {
           </div>
         </section>
 
-        <aside className="scrollbar-thin sticky top-16 flex max-h-[calc(100vh-80px)] min-w-50 flex-1 flex-col gap-3 overflow-y-auto pb-4">
+        <aside className="sticky top-16 flex max-h-[calc(100vh-80px)] min-w-50 flex-1 scrollbar-thin flex-col gap-3 overflow-y-auto pb-4">
           <div className="flex gap-2">
             <Button
               onClick={() =>
@@ -513,13 +520,13 @@ export default function CopybookPage() {
                 )
               }
               variant="outline"
-              className="inline-flex h-9 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-md border bg-background px-4 py-2 text-sm font-medium shadow-xs transition-all hover:bg-accent hover:text-accent-foreground"
+              className="bg-background hover:bg-accent hover:text-accent-foreground inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium whitespace-nowrap shadow-xs transition-all"
             >
               <Download className="h-4 w-4" />导 出
             </Button>
             <Button
               onClick={handlePrint}
-              className="inline-flex h-9 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs transition-all hover:bg-primary/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap shadow-xs transition-all"
             >
               <Printer className="h-4 w-4" />打 印
             </Button>
@@ -540,7 +547,7 @@ export default function CopybookPage() {
               onChange={(e) => updateSetting("content", e.target.value)}
               rows={3}
               placeholder="输入要练习的文字..."
-              className="h-24 min-h-16 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-base shadow-xs transition-[color,box-shadow] placeholder:text-muted-foreground md:text-sm"
+              className="border-input bg-background placeholder:text-muted-foreground h-24 min-h-16 w-full resize-none rounded-md border px-3 py-2 text-base shadow-xs transition-[color,box-shadow] md:text-sm"
             />
           )}
 
@@ -629,7 +636,7 @@ export default function CopybookPage() {
                     {(["top", "right", "bottom", "left"] as const).map(
                       (key) => (
                         <div key={key} className="space-y-1">
-                          <div className="text-center text-[11px] text-muted-foreground">
+                          <div className="text-muted-foreground text-center text-[11px]">
                             {
                               {
                                 top: "上",
@@ -648,7 +655,7 @@ export default function CopybookPage() {
                             onChange={(e) =>
                               updateMargin(key, Number(e.target.value))
                             }
-                            className="h-9 rounded-md border border-input bg-background px-2 text-center text-xs shadow-xs"
+                            className="border-input bg-background h-9 rounded-md border px-2 text-center text-xs shadow-xs"
                           />
                         </div>
                       ),
@@ -887,7 +894,7 @@ function FontPickerCard({
 
       {expanded && (
         <>
-          <div className="grid grid-cols-2 rounded-lg bg-muted p-0.5">
+          <div className="bg-muted grid grid-cols-2 rounded-lg p-0.5">
             <button
               type="button"
               onClick={() => onTabChange("common")}
@@ -912,7 +919,7 @@ function FontPickerCard({
             </button>
           </div>
 
-          <div className="max-h-44 overflow-y-auto rounded-md border border-input bg-background shadow-xs">
+          <div className="border-input bg-background max-h-44 overflow-y-auto rounded-md border shadow-xs">
             {options.map((option) => {
               const selected = option.value === value;
               return (
@@ -920,10 +927,10 @@ function FontPickerCard({
                   key={option.value}
                   type="button"
                   onClick={() => onValueChange(option.value)}
-                  className={`flex w-full items-center justify-between border-b border-border px-3 py-2 text-left text-sm last:border-b-0 ${
+                  className={`border-border flex w-full items-center justify-between border-b px-3 py-2 text-left text-sm last:border-b-0 ${
                     selected
                       ? "bg-muted/50 text-foreground"
-                      : "text-slate-700 hover:bg-accent"
+                      : "hover:bg-accent text-slate-700"
                   }`}
                 >
                   <span
@@ -948,18 +955,18 @@ function FontPickerCard({
                     if (e.key === "Enter") onApplyCustomLocalFont();
                   }}
                   placeholder="输入本机字体名"
-                  className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-xs"
+                  className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
                 />
                 <Button
                   type="button"
                   onClick={onApplyCustomLocalFont}
                   variant="outline"
-                  className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-xs"
+                  className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
                 >
                   应用
                 </Button>
               </div>
-              <p className="text-xs leading-5 text-muted-foreground">
+              <p className="text-muted-foreground text-xs leading-5">
                 可输入系统已安装字体名，如“田英章楷书”“方正楷体”“AaKaiSong”。
               </p>
             </div>
@@ -1042,7 +1049,7 @@ function CompactSelectRow({
   return (
     <div className="flex h-9 items-center justify-between text-sm">
       <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger className="relative h-9 w-full select-none gap-0.5 border-0 bg-transparent px-0 text-sm shadow-none outline-none">
+        <SelectTrigger className="relative h-9 w-full gap-0.5 border-0 bg-transparent px-0 text-sm shadow-none outline-none select-none">
           <div className="flex w-full items-center justify-between gap-1 text-sm">
             <label className="max-w-[45%] truncate text-sm font-medium text-slate-700">
               {label}
@@ -1135,12 +1142,12 @@ function CompactColorRow({
             type="color"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="h-9 w-10 cursor-pointer rounded-md border border-input bg-background p-1"
+            className="border-input bg-background h-9 w-10 cursor-pointer rounded-md border p-1"
           />
           <Input
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-xs"
+            className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
           />
         </div>
       )}

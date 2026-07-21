@@ -136,12 +136,11 @@ function practiceCellLook(
   settings: CopybookSettings,
   index: number,
 ): { style: "solid" | "trace" | "hollow"; color: string } {
-  if (settings.renderMode === "solid") return { style: "solid", color: settings.color };
-  if (settings.renderMode === "hollow") return { style: "hollow", color: settings.color };
-  if (
-    settings.highlightFirst &&
-    index < Math.max(0, settings.highlightCount)
-  ) {
+  if (settings.renderMode === "solid")
+    return { style: "solid", color: settings.color };
+  if (settings.renderMode === "hollow")
+    return { style: "hollow", color: settings.color };
+  if (settings.highlightFirst && index < Math.max(0, settings.highlightCount)) {
     return { style: "solid", color: settings.highlightColor };
   }
   return { style: "trace", color: settings.miaoColor };
@@ -275,7 +274,16 @@ function drawCharCell(
   const cy = y + cell / 2 + (settings.vOffset / 100) * cell;
   ctx.save();
   setFont(ctx, settings, fontPx);
-  paintChar(ctx, ch, cx, cy, look.style, look.color, settings.miaoColor, fontPx);
+  paintChar(
+    ctx,
+    ch,
+    cx,
+    cy,
+    look.style,
+    look.color,
+    settings.miaoColor,
+    fontPx,
+  );
   ctx.restore();
 }
 

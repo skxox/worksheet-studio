@@ -7,3 +7,4 @@ ignoredBuiltDependencies:
 allowBuilds:
   core-js: true
   sharp: true
+  tesseract.js: set this to true or false

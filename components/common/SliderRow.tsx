@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 
 interface SliderRowProps {
   label: string;
@@ -24,7 +24,7 @@ export function SliderRow({
   min = 0,
   max = 100,
   step = 1,
-  unit = '',
+  unit = "",
   minLabel,
   maxLabel,
   recommend,
@@ -33,20 +33,26 @@ export function SliderRow({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <Label>{label}</Label>
-        <span className="text-xs tabular-nums text-muted-foreground">
+        <span className="text-muted-foreground text-xs tabular-nums">
           {value}
           {unit}
         </span>
       </div>
-      <Slider value={[value]} onValueChange={([v]) => onChange(v)} min={min} max={max} step={step} />
+      <Slider
+        value={[value]}
+        onValueChange={([v]) => onChange(v)}
+        min={min}
+        max={max}
+        step={step}
+      />
       {(minLabel || maxLabel) && (
-        <div className="flex justify-between text-[10px] leading-none text-muted-foreground">
+        <div className="text-muted-foreground flex justify-between text-[10px] leading-none">
           <span>{minLabel}</span>
           <span>{maxLabel}</span>
         </div>
       )}
       {recommend !== undefined && (
-        <p className="text-[10px] leading-none text-muted-foreground">
+        <p className="text-muted-foreground text-[10px] leading-none">
           推荐 {recommend}
           {unit}
         </p>

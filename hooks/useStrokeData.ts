@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { prefetchStrokes } from '@/lib/stroke';
+import { useEffect, useState } from "react";
+import { prefetchStrokes } from "@/lib/stroke";
 
 /**
  * 当 enabled 时，预取文本中所有汉字的笔顺数据；完成后递增 ready 触发重绘。

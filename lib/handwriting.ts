@@ -1,7 +1,7 @@
-import type { HandwritingSettings, MarginPx } from '@/types';
-import { fontStack } from '@/lib/fonts';
-import { mmToPx, toMarginPx } from '@/lib/paper';
-import { seededRandom } from '@/lib/utils';
+import type { HandwritingSettings, MarginPx } from "@/types";
+import { fontStack } from "@/lib/fonts";
+import { mmToPx, toMarginPx } from "@/lib/paper";
+import { seededRandom } from "@/lib/utils";
 
 /** #RRGGBB → rgba()，失败时回退原值 */
 function hexToRgba(hex: string, alpha: number): string {
@@ -14,21 +14,25 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-const PAPER_BG: Record<HandwritingSettings['paperBackground'], string> = {
-  white: '#ffffff',
-  lined: '#fbfbf8',
-  grid: '#fbfbf8',
-  dot: '#fcfbf7',
-  yellow: '#fdf6e8',
-  aged: '#f1e9d6',
+const PAPER_BG: Record<HandwritingSettings["paperBackground"], string> = {
+  white: "#ffffff",
+  lined: "#fbfbf8",
+  grid: "#fbfbf8",
+  dot: "#fcfbf7",
+  yellow: "#fdf6e8",
+  aged: "#f1e9d6",
 };
 
 /** 按宽度软换行，尊重 \n */
-function wrapLines(ctx: CanvasRenderingContext2D, content: string, maxWidth: number): string[] {
+function wrapLines(
+  ctx: CanvasRenderingContext2D,
+  content: string,
+  maxWidth: number,
+): string[] {
   const result: string[] = [];
-  for (const para of content.split('\n')) {
+  for (const para of content.split("\n")) {
     const chars = Array.from(para);
-    let cur = '';
+    let cur = "";
     for (const ch of chars) {
       const test = cur + ch;
       if (ctx.measureText(test).width > maxWidth && cur.length > 0) {
@@ -46,14 +50,14 @@ function wrapLines(ctx: CanvasRenderingContext2D, content: string, maxWidth: num
 /** 按固定每行字数换行，尊重 \n */
 function wrapByCols(content: string, cols: number): string[] {
   const result: string[] = [];
-  for (const para of content.split('\n')) {
+  for (const para of content.split("\n")) {
     const chars = Array.from(para);
     if (chars.length === 0) {
-      result.push('');
+      result.push("");
       continue;
     }
     for (let i = 0; i < chars.length; i += cols) {
-      result.push(chars.slice(i, i + cols).join(''));
+      result.push(chars.slice(i, i + cols).join(""));
     }
   }
   return result;
@@ -66,14 +70,14 @@ function drawHandwritingBackground(
   height: number,
   settings: HandwritingSettings,
   m: MarginPx,
-  rng: () => number
+  rng: () => number,
 ): void {
   ctx.fillStyle = PAPER_BG[settings.paperBackground];
   ctx.fillRect(0, 0, width, height);
 
   // 横线稿纸：基线 + 左侧红色装订线（更接近真实信纸/稿纸）
-  if (settings.paperBackground === 'lined') {
-    ctx.strokeStyle = '#e2dfd6';
+  if (settings.paperBackground === "lined") {
+    ctx.strokeStyle = "#e2dfd6";
     ctx.lineWidth = 0.8;
     const step = settings.lineSpacing;
     for (let y = m.top + settings.fontSize; y <= height - m.bottom; y += step) {
@@ -83,7 +87,7 @@ function drawHandwritingBackground(
       ctx.stroke();
     }
     // 红色装订线
-    ctx.strokeStyle = '#e7b3b3';
+    ctx.strokeStyle = "#e7b3b3";
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(m.left, m.top);
@@ -92,10 +96,13 @@ function drawHandwritingBackground(
   }
 
   // 方格 / 点阵 背景
-  if (settings.paperBackground === 'grid' || settings.paperBackground === 'dot') {
+  if (
+    settings.paperBackground === "grid" ||
+    settings.paperBackground === "dot"
+  ) {
     const step = mmToPx(5);
-    if (settings.paperBackground === 'grid') {
-      ctx.strokeStyle = '#e6e2d8';
+    if (settings.paperBackground === "grid") {
+      ctx.strokeStyle = "#e6e2d8";
       ctx.lineWidth = 0.5;
       for (let y = m.top; y <= height - m.bottom + 0.5; y += step) {
         ctx.beginPath();
@@ -110,7 +117,7 @@ function drawHandwritingBackground(
         ctx.stroke();
       }
     } else {
-      ctx.fillStyle = '#cbc4b3';
+      ctx.fillStyle = "#cbc4b3";
       for (let x = m.left; x <= width - m.right + 0.5; x += step) {
         for (let y = m.top; y <= height - m.bottom + 0.5; y += step) {
           ctx.beginPath();
@@ -122,16 +129,21 @@ function drawHandwritingBackground(
   }
 
   // 米黄 / 做旧：淡淡的纤维纹理 + 偶发污渍，避免纯色塑料感
-  if (settings.paperBackground === 'yellow' || settings.paperBackground === 'aged') {
-    const isAged = settings.paperBackground === 'aged';
-    ctx.fillStyle = isAged ? 'rgba(120, 92, 50, 0.05)' : 'rgba(150, 130, 80, 0.03)';
+  if (
+    settings.paperBackground === "yellow" ||
+    settings.paperBackground === "aged"
+  ) {
+    const isAged = settings.paperBackground === "aged";
+    ctx.fillStyle = isAged
+      ? "rgba(120, 92, 50, 0.05)"
+      : "rgba(150, 130, 80, 0.03)";
     const count = Math.floor((width * height) / 900);
     for (let i = 0; i < count; i++) {
       ctx.fillRect(rng() * width, rng() * height, 1.4, 1.4);
     }
     if (isAged) {
       // 几处淡褐色污渍
-      ctx.fillStyle = 'rgba(120, 90, 45, 0.06)';
+      ctx.fillStyle = "rgba(120, 90, 45, 0.06)";
       for (let i = 0; i < 6; i++) {
         const cx = rng() * width;
         const cy = rng() * height;
@@ -154,7 +166,7 @@ export function drawHandwriting(
   width: number,
   height: number,
   settings: HandwritingSettings,
-  seed: number
+  seed: number,
 ): void {
   const rng = seededRandom(seed);
   const m = toMarginPx(settings.margin);
@@ -179,8 +191,8 @@ export function drawHandwriting(
   const scribble = settings.scribbleRate / 100;
   const baseSpacing = settings.fontSize * 0.02 + settings.letterSpacing;
 
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
 
   let baselineY = m.top + settings.fontSize;
   for (const line of lines) {
@@ -191,7 +203,7 @@ export function drawHandwriting(
     let x = m.left + (rng() - 0.5) * pChaos * settings.fontSize * 0.4;
 
     for (const ch of Array.from(line)) {
-      if (ch === ' ' || ch === '\t') {
+      if (ch === " " || ch === "\t") {
         x += ctx.measureText(ch).width + baseSpacing;
         continue;
       }

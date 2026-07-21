@@ -10,13 +10,13 @@ importers:
     dependencies:
       '@fontsource/long-cang':
         specifier: ^5.2.8
-        version: 5.2.8
+        version: 5.3.0
       '@fontsource/ma-shan-zheng':
         specifier: ^5.2.9
         version: 5.2.9
       '@fontsource/zhi-mang-xing':
         specifier: ^5.2.8
-        version: 5.2.8
+        version: 5.3.0
       '@radix-ui/react-label':
         specifier: ^2.1.1
         version: 2.1.11(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -93,6 +93,12 @@ importers:
       eslint-config-next:
         specifier: 16.2.10
         version: 16.2.10(@typescript-eslint/parser@8.64.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.0.2))(eslint@9.39.5(jiti@2.7.0))(typescript@5.0.2)
+      prettier:
+        specifier: ^3.9.5
+        version: 3.9.5
+      prettier-plugin-tailwindcss:
+        specifier: ^0.8.1
+        version: 0.8.1(prettier@3.9.5)
       tailwindcss:
         specifier: ^4
         version: 4.3.2
@@ -233,14 +239,14 @@ packages:
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
-  '@fontsource/long-cang@5.2.8':
-    resolution: {integrity: sha512-wsP/YTWDNKjCGU45nixHmW/YIH/uY23HMfn5GBwq+EQYbQi6v+HF7TtFD+NU+TMX1lM1m+F1y/y1JXonNimEWg==}
+  '@fontsource/long-cang@5.3.0':
+    resolution: {integrity: sha512-lCcBJb+LWZpYCVtGvQRiZPy5/EaGPuYLycpJXUIOz28EYGGqhTVWBRqY6ucaW8l1F8gvfjutY1PoAPUrFiP0wg==}
 
   '@fontsource/ma-shan-zheng@5.2.9':
     resolution: {integrity: sha512-5Pvpb5q6sq00/g+yLLE8iYWcsAqnoIqCloBsjN0bphkGWU3Wp3EfT0CgTsKOiLsPM8GN3AUP0ZaFM2/JR33C/g==}
 
-  '@fontsource/zhi-mang-xing@5.2.8':
-    resolution: {integrity: sha512-lqpYfbIeBOQHymlG49kTArZaomXjlEFYEe2o8bXFz0BGMkX/a8rXLYi3E36XSiYcOs/rK1l/Lvqycz5jqHhGfw==}
+  '@fontsource/zhi-mang-xing@5.3.0':
+    resolution: {integrity: sha512-V21yCCm5o2PHdXF2P9KKh7uiqL8QFFuII4DRQkpG24tfyDzJPchXKsxkcvKM43xEPvQKdbhHCBbXEFjcm/TUCQ==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -2295,6 +2301,66 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
 
+  prettier-plugin-tailwindcss@0.8.1:
+    resolution: {integrity: sha512-iaFMYqDsE4ffdDkn5qup0j5f2aCEBFZrdrZnvu9QKTlWx/iGPeQ4HHu7b7fCPMxeo9nwQBiOAh2nSypdFYWJkw==}
+    engines: {node: '>=20.19'}
+    peerDependencies:
+      '@ianvs/prettier-plugin-sort-imports': '*'
+      '@prettier/plugin-hermes': '*'
+      '@prettier/plugin-oxc': '*'
+      '@prettier/plugin-pug': '*'
+      '@shopify/prettier-plugin-liquid': '*'
+      '@trivago/prettier-plugin-sort-imports': '*'
+      '@zackad/prettier-plugin-twig': '*'
+      prettier: ^3.0
+      prettier-plugin-astro: '*'
+      prettier-plugin-css-order: '*'
+      prettier-plugin-jsdoc: '*'
+      prettier-plugin-marko: '*'
+      prettier-plugin-multiline-arrays: '*'
+      prettier-plugin-organize-attributes: '*'
+      prettier-plugin-organize-imports: '*'
+      prettier-plugin-sort-imports: '*'
+      prettier-plugin-svelte: '*'
+    peerDependenciesMeta:
+      '@ianvs/prettier-plugin-sort-imports':
+        optional: true
+      '@prettier/plugin-hermes':
+        optional: true
+      '@prettier/plugin-oxc':
+        optional: true
+      '@prettier/plugin-pug':
+        optional: true
+      '@shopify/prettier-plugin-liquid':
+        optional: true
+      '@trivago/prettier-plugin-sort-imports':
+        optional: true
+      '@zackad/prettier-plugin-twig':
+        optional: true
+      prettier-plugin-astro:
+        optional: true
+      prettier-plugin-css-order:
+        optional: true
+      prettier-plugin-jsdoc:
+        optional: true
+      prettier-plugin-marko:
+        optional: true
+      prettier-plugin-multiline-arrays:
+        optional: true
+      prettier-plugin-organize-attributes:
+        optional: true
+      prettier-plugin-organize-imports:
+        optional: true
+      prettier-plugin-sort-imports:
+        optional: true
+      prettier-plugin-svelte:
+        optional: true
+
+  prettier@3.9.5:
+    resolution: {integrity: sha512-/FVl766LpUfB5vXgCYOYa0MeV/441Ia99AeICQIQFTY/Nw0roZwULcXpku5i1/m5kt/baz+s4Zogspd839HSMg==}
+    engines: {node: '>=14'}
+    hasBin: true
+
   process-nextick-args@2.0.1:
     resolution: {integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==}
 
@@ -2924,11 +2990,11 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
-  '@fontsource/long-cang@5.2.8': {}
+  '@fontsource/long-cang@5.3.0': {}
 
   '@fontsource/ma-shan-zheng@5.2.9': {}
 
-  '@fontsource/zhi-mang-xing@5.2.8': {}
+  '@fontsource/zhi-mang-xing@5.3.0': {}
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -5006,6 +5072,12 @@ snapshots:
       source-map-js: 1.2.1
 
   prelude-ls@1.2.1: {}
+
+  prettier-plugin-tailwindcss@0.8.1(prettier@3.9.5):
+    dependencies:
+      prettier: 3.9.5
+
+  prettier@3.9.5: {}
 
   process-nextick-args@2.0.1: {}
 

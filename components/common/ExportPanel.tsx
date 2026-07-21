@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { FileDown, ImageDown, FileCode } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { FileDown, ImageDown, FileCode } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ExportPanelProps {
   onPDF: () => void;
@@ -11,7 +11,12 @@ interface ExportPanelProps {
 }
 
 /** 通用导出按钮组：PDF / PNG（+ 可选 SVG） */
-export function ExportPanel({ onPDF, onPNG, onSVG, showSVG }: ExportPanelProps) {
+export function ExportPanel({
+  onPDF,
+  onPNG,
+  onSVG,
+  showSVG,
+}: ExportPanelProps) {
   return (
     <div className="flex gap-2">
       <Button onClick={onPDF} variant="outline" className="flex-1">

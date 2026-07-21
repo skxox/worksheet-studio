@@ -117,8 +117,16 @@
   body {
     @apply bg-background text-foreground;
     font-family:
-      ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei",
-      "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "PingFang SC",
+      "Microsoft YaHei",
+      "Segoe UI",
+      Roboto,
+      Helvetica,
+      Arial,
+      sans-serif;
   }
 }
 
