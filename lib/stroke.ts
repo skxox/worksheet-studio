@@ -57,7 +57,9 @@ interface DrawStrokeOpts {
   color: string;
   /** 只画前 upTo 笔（默认全部），用于"逐笔累进" */
   upTo?: number;
-  /** 在第 orderNumber 笔的起点标红色序号（1-based）；不传则不标 */
+  /** 最后一笔（即第 upTo 笔，当前正在写的那一笔）用该色高亮；不传则与 color 一致 */
+  lastStrokeColor?: string;
+  /** 在第 orderNumber 笔的起点标序号（1-based）；不传则不标 */
   orderNumber?: number;
   orderColor?: string;
 }
@@ -88,8 +90,10 @@ export function drawCharStrokes(
   ctx.save();
   ctx.translate(x + off, y + off + yTop * sc);
   ctx.scale(sc, -sc);
-  ctx.fillStyle = opts.color;
   for (let i = 0; i < upto; i++) {
+    // 最后一笔（当前笔画）单独高亮
+    ctx.fillStyle =
+      i === upto - 1 && opts.lastStrokeColor ? opts.lastStrokeColor : opts.color;
     ctx.fill(new Path2D(data.strokes[i]));
   }
   ctx.restore();

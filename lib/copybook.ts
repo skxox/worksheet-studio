@@ -220,7 +220,8 @@ function drawPinyinText(
   ctx.fillStyle = "#8a8a8a";
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  let fs = h * 0.5;
+  // 字号约为行高的 0.66：让小写 x-height 正好填满中间格（一格 = h/3）
+  let fs = h * 0.66;
   ctx.font = `${fs}px ui-sans-serif, system-ui, sans-serif`;
   while (ctx.measureText(py).width > maxW && fs > 8) {
     fs -= 1;
@@ -263,9 +264,10 @@ function drawCharacterCopybook(
   const cols = Math.max(1, Math.floor(contentWidth / cell));
   const chars = Array.from(settings.content).filter((c) => c.trim().length > 0);
 
-  const strokeRowH = settings.showStroke ? cell * 0.7 : 0;
-  // 拼音四线三格行高比字格略矮一点，拼音字号随之等比缩小
-  const pinyinRowH = settings.showPinyin ? cell * 0.8 : 0;
+  // 笔顺行与拼音四线三格行同高（均略矮于字格），笔顺字形/拼音字号随之等比缩小
+  const auxRowH = cell * 0.6;
+  const strokeRowH = settings.showStroke ? auxRowH : 0;
+  const pinyinRowH = settings.showPinyin ? auxRowH : 0;
   const rowGap = mmToPx(settings.rowGap);
   const maxY = m.top + contentHeight;
 
@@ -273,15 +275,27 @@ function drawCharacterCopybook(
     if (y + strokeRowH + pinyinRowH + cell > maxY) return maxY + 1;
 
     if (settings.showStroke) {
+      // 整行外边框：与拼音行/字格行同宽（cols*cell），三行连成一整块；线色与字格一致
+      ctx.save();
+      ctx.strokeStyle = settings.lineColor;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(m.left, y, cols * cell, strokeRowH);
+      ctx.restore();
       const sd = ch ? peekStroke(ch) : null;
       if (ch && sd && sd.strokes.length > 0) {
         const n = sd.strokes.length;
         const mini = Math.min(strokeRowH, contentWidth / Math.max(n, 1));
+        // 笔顺字形比字格小一点，在槽位内居中
+        const gs = mini * 0.8;
+        const gy = y + (strokeRowH - gs) / 2;
+        // 逐笔累进：第 k 个位置画前 k 笔，已写笔画用首字高亮的字色、当前第 k 笔标红（不画方格、不标序号）
         for (let k = 1; k <= n; k++) {
-          drawCharStrokes(ctx, ch, m.left + (k - 1) * mini * 1.02, y, mini, {
+          const sx = m.left + (k - 1) * mini;
+          const gx = sx + (mini - gs) / 2;
+          drawCharStrokes(ctx, ch, gx, gy, gs, {
             color: settings.color,
             upTo: k,
-            orderNumber: k,
+            lastStrokeColor: "#d33b3b",
           });
         }
       }
@@ -307,7 +321,14 @@ function drawCharacterCopybook(
         }
       }
       // 四线三格：整行连续横线 + 最外两侧竖向边框（与下方字格一体）
-      drawPinyinRule(ctx, m.left, y, cols * cell, pinyinRowH, settings.lineColor);
+      drawPinyinRule(
+        ctx,
+        m.left,
+        y,
+        cols * cell,
+        pinyinRowH,
+        settings.lineColor,
+      );
       // 每个练习列居中写一个拼音（插入空列时仅偶数列）
       for (let c = 0; c < cols; c++) {
         const slot = !settings.insertEmptyCol || c % 2 === 0;
@@ -361,7 +382,14 @@ function drawCharacterCopybook(
     // 插入空行：在每两个字块之间补一行空格
     if (settings.insertEmptyRow && y + cell <= maxY) {
       for (let c = 0; c < cols; c++) {
-        drawCellBox(ctx, settings.gridType, m.left + c * cell, y, cell, settings.lineColor);
+        drawCellBox(
+          ctx,
+          settings.gridType,
+          m.left + c * cell,
+          y,
+          cell,
+          settings.lineColor,
+        );
       }
       y += cell + rowGap;
     }
