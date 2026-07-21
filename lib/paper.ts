@@ -1,24 +1,24 @@
-import type { Margin, MarginPx, PaperSettings, PaperSize } from '@/types';
+import type { Margin, MarginPx, PaperSettings, PaperSize } from "@/types";
 
 const MM_TO_PX = 3.7795275591; // 1mm = 3.78px @ 96 DPI
 
 export const PAPER_SIZES: PaperSize[] = [
-  { name: 'A4', width: 210, height: 297 },
-  { name: 'A3', width: 297, height: 420 },
-  { name: 'A5', width: 148, height: 210 },
-  { name: 'B5', width: 176, height: 250 },
-  { name: 'Letter', width: 216, height: 279 },
-  { name: '16K', width: 195, height: 270 },
-  { name: '32K', width: 130, height: 185 },
+  { name: "A4", width: 210, height: 297 },
+  { name: "A3", width: 297, height: 420 },
+  { name: "A5", width: 148, height: 210 },
+  { name: "B5", width: 176, height: 250 },
+  { name: "Letter", width: 216, height: 279 },
+  { name: "16K", width: 195, height: 270 },
+  { name: "32K", width: 130, height: 185 },
 ];
 
 export const PAPER_THEMES: Record<
-  NonNullable<PaperSettings['theme']>,
+  NonNullable<PaperSettings["theme"]>,
   { bg: string; line: string }
 > = {
-  default: { bg: '#ffffff', line: '#d1d5db' },
-  warm: { bg: '#fef9f3', line: '#e8d5c4' },
-  cool: { bg: '#f0f9ff', line: '#bae6fd' },
+  default: { bg: "#ffffff", line: "#d1d5db" },
+  warm: { bg: "#fef9f3", line: "#e8d5c4" },
+  cool: { bg: "#f0f9ff", line: "#bae6fd" },
 };
 
 export function mmToPx(mm: number): number {
@@ -36,7 +36,7 @@ export function toMarginPx(margin: Margin): MarginPx {
 
 export function getCanvasSize(
   paperSize: PaperSize,
-  dpi: number = 96
+  dpi: number = 96,
 ): { width: number; height: number } {
   const ratio = dpi / 96;
   return {
@@ -47,16 +47,19 @@ export function getCanvasSize(
 
 function getLineDash(style: string, width: number): number[] {
   switch (style) {
-    case 'dashed':
+    case "dashed":
       return [width * 4, width * 2];
-    case 'dotted':
+    case "dotted":
       return [width, width * 2];
     default:
       return [];
   }
 }
 
-function applyLineStyle(ctx: CanvasRenderingContext2D, settings: PaperSettings) {
+function applyLineStyle(
+  ctx: CanvasRenderingContext2D,
+  settings: PaperSettings,
+) {
   ctx.strokeStyle = settings.lineColor;
   ctx.lineWidth = settings.lineWidth;
   ctx.setLineDash(getLineDash(settings.lineStyle, settings.lineWidth));
@@ -67,7 +70,7 @@ export function drawPaperBackground(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  settings: PaperSettings
+  settings: PaperSettings,
 ): void {
   ctx.fillStyle = settings.bgColor;
   ctx.fillRect(0, 0, width, height);
@@ -78,22 +81,28 @@ function drawTexture(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  settings: PaperSettings
+  settings: PaperSettings,
 ): void {
-  if (settings.texture === 'none') return;
+  if (settings.texture === "none") return;
   ctx.save();
-  if (settings.texture === 'parchment') {
-    ctx.fillStyle = 'rgba(150, 120, 60, 0.05)';
+  if (settings.texture === "parchment") {
+    ctx.fillStyle = "rgba(150, 120, 60, 0.05)";
     ctx.fillRect(0, 0, width, height);
-    ctx.fillStyle = 'rgba(120, 90, 40, 0.06)';
+    ctx.fillStyle = "rgba(120, 90, 40, 0.06)";
     for (let i = 0; i < 12; i++) {
       ctx.beginPath();
-      ctx.arc(Math.random() * width, Math.random() * height, 20 + Math.random() * 70, 0, Math.PI * 2);
+      ctx.arc(
+        Math.random() * width,
+        Math.random() * height,
+        20 + Math.random() * 70,
+        0,
+        Math.PI * 2,
+      );
       ctx.fill();
     }
   } else {
     // fiber：细短纤维纹
-    ctx.strokeStyle = 'rgba(120, 110, 90, 0.05)';
+    ctx.strokeStyle = "rgba(120, 110, 90, 0.05)";
     ctx.lineWidth = 0.5;
     for (let i = 0; i < 220; i++) {
       const x = Math.random() * width;
@@ -115,7 +124,7 @@ function drawWatermark(
   width: number,
   height: number,
   text: string,
-  color: string
+  color: string,
 ): void {
   if (!text) return;
   ctx.save();
@@ -129,8 +138,8 @@ function drawWatermark(
   }
   ctx.fillStyle = color;
   ctx.globalAlpha = 0.12;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
   ctx.fillText(text, 0, 0);
   ctx.restore();
 }
@@ -141,13 +150,13 @@ function drawPageNumber(
   width: number,
   height: number,
   pageIndex: number,
-  pageCount: number
+  pageCount: number,
 ): void {
   ctx.save();
-  ctx.fillStyle = '#9ca3af';
+  ctx.fillStyle = "#9ca3af";
   ctx.font = `${mmToPx(3.5)}px sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
   ctx.fillText(`${pageIndex} / ${pageCount}`, width / 2, height - mmToPx(6));
   ctx.restore();
 }
@@ -157,7 +166,7 @@ export function drawGridPaper(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  settings: PaperSettings
+  settings: PaperSettings,
 ): void {
   const gridPx = mmToPx(settings.gridSize);
   const m = toMarginPx(settings.margin);
@@ -185,7 +194,7 @@ export function drawLinePaper(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  settings: PaperSettings
+  settings: PaperSettings,
 ): void {
   const linePx = mmToPx(settings.gridSize);
   const m = toMarginPx(settings.margin);
@@ -205,7 +214,7 @@ export function drawDotPaper(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  settings: PaperSettings
+  settings: PaperSettings,
 ): void {
   const gridPx = mmToPx(settings.gridSize);
   const m = toMarginPx(settings.margin);
@@ -226,7 +235,7 @@ export function drawCornellPaper(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  settings: PaperSettings
+  settings: PaperSettings,
 ): void {
   const m = toMarginPx(settings.margin);
   const contentWidth = width - m.left - m.right;
@@ -250,7 +259,11 @@ export function drawCornellPaper(
   // 笔记区横线
   const linePx = mmToPx(8);
   ctx.setLineDash(getLineDash(settings.lineStyle, settings.lineWidth));
-  for (let y = m.top + linePx; y <= height - m.bottom - summaryHeight; y += linePx) {
+  for (
+    let y = m.top + linePx;
+    y <= height - m.bottom - summaryHeight;
+    y += linePx
+  ) {
     ctx.beginPath();
     ctx.moveTo(m.left + cueWidth + 8, y);
     ctx.lineTo(width - m.right, y);
@@ -264,7 +277,7 @@ export function drawStaffPaper(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  settings: PaperSettings
+  settings: PaperSettings,
 ): void {
   const m = toMarginPx(settings.margin);
   const lineGap = Math.max(3, settings.lineWidth * 4); // 线间距
@@ -291,7 +304,7 @@ export function drawPinyinPaper(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  settings: PaperSettings
+  settings: PaperSettings,
 ): void {
   const m = toMarginPx(settings.margin);
   const lineGap = Math.max(3, settings.lineWidth * 5);
@@ -321,14 +334,19 @@ export function drawEssayPaper(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  settings: PaperSettings
+  settings: PaperSettings,
 ): void {
   const m = toMarginPx(settings.margin);
   drawGridPaper(ctx, width, height, settings);
   ctx.save();
-  ctx.strokeStyle = '#d64545';
+  ctx.strokeStyle = "#d64545";
   ctx.lineWidth = 1.5;
-  ctx.strokeRect(m.left, m.top, width - m.left - m.right, height - m.top - m.bottom);
+  ctx.strokeRect(
+    m.left,
+    m.top,
+    width - m.left - m.right,
+    height - m.top - m.bottom,
+  );
   ctx.restore();
 }
 
@@ -342,8 +360,8 @@ const GUIDE_LINE_WIDTH = 0.5;
 /** 虚线引导线的 [短划, 间隙]。比旧的 [4,3]/[3,2] 更细碎，接近主流字帖的细虚线观感。 */
 const GUIDE_DASH: number[] = [2, 2];
 
-/** 画一条经过中心 (cx,cy) 的虚线：拆成「中心→端点1」「中心→端点2」两段分别描边，
- *  使中心交界恒落在短划起点（而非间隙），避免田字/米字等中心交汇处被虚线间隙截断。
+/** 画一条经过中心 (cx,cy) 的虚线：通过动态调整 lineDashOffset，
+ *  让中心点尽量落在「短划内部」而不是短划端点，避免中心交汇处出现突兀的深色小点。
  *  调用前需已 setLineDash / lineWidth。 */
 function strokeDashedThroughCenter(
   ctx: CanvasRenderingContext2D,
@@ -352,16 +370,31 @@ function strokeDashedThroughCenter(
   x1: number,
   y1: number,
   x2: number,
-  y2: number
+  y2: number,
 ): void {
+  const dash = ctx.getLineDash();
+  const patternLen = dash.reduce((sum, n) => sum + n, 0);
+  if (!patternLen) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    return;
+  }
+
+  const prevOffset = ctx.lineDashOffset;
+  const length = Math.hypot(x2 - x1, y2 - y1);
+  const centerDist = Math.min(length, Math.hypot(cx - x1, cy - y1));
+  const mod = ((centerDist % patternLen) + patternLen) % patternLen;
+  const target = (dash[0] ?? 0) / 2;
+  ctx.lineDashOffset = target - mod;
+
   ctx.beginPath();
-  ctx.moveTo(cx, cy);
-  ctx.lineTo(x1, y1);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(cx, cy);
+  ctx.moveTo(x1, y1);
   ctx.lineTo(x2, y2);
   ctx.stroke();
+
+  ctx.lineDashOffset = prevOffset;
 }
 
 /** 田字格：外框 + 十字虚线 */
@@ -370,7 +403,7 @@ export function drawTianGrid(
   x: number,
   y: number,
   size: number,
-  color: string = '#d1d5db'
+  color: string = "#d1d5db",
 ): void {
   ctx.save();
   ctx.strokeStyle = color;
@@ -393,7 +426,7 @@ export function drawMiGrid(
   x: number,
   y: number,
   size: number,
-  color: string = '#d1d5db'
+  color: string = "#d1d5db",
 ): void {
   ctx.save();
   ctx.strokeStyle = color;
@@ -420,7 +453,7 @@ export function drawHuigongGrid(
   x: number,
   y: number,
   size: number,
-  color: string = '#d1d5db'
+  color: string = "#d1d5db",
 ): void {
   ctx.save();
   ctx.strokeStyle = color;
@@ -445,7 +478,7 @@ export function drawFangGrid(
   x: number,
   y: number,
   size: number,
-  color: string = '#d1d5db'
+  color: string = "#d1d5db",
 ): void {
   ctx.save();
   ctx.strokeStyle = color;
@@ -460,7 +493,7 @@ export function drawJiugongGrid(
   x: number,
   y: number,
   size: number,
-  color: string = '#d1d5db'
+  color: string = "#d1d5db",
 ): void {
   ctx.save();
   ctx.strokeStyle = color;
@@ -486,7 +519,7 @@ export function drawEssayGrid(
   x: number,
   y: number,
   size: number,
-  color: string = '#d1d5db'
+  color: string = "#d1d5db",
 ): void {
   ctx.save();
   ctx.strokeStyle = color;
@@ -502,7 +535,7 @@ function strokeHuigongFrame(
   y: number,
   size: number,
   color: string,
-  inset: number
+  inset: number,
 ): void {
   ctx.strokeStyle = color;
   ctx.lineWidth = 1;
@@ -518,7 +551,7 @@ export function drawHuitianGrid(
   x: number,
   y: number,
   size: number,
-  color: string = '#d1d5db'
+  color: string = "#d1d5db",
 ): void {
   ctx.save();
   const inset = size * 0.12;
@@ -538,7 +571,7 @@ export function drawHuimiGrid(
   x: number,
   y: number,
   size: number,
-  color: string = '#d1d5db'
+  color: string = "#d1d5db",
 ): void {
   ctx.save();
   const inset = size * 0.12;
@@ -562,7 +595,7 @@ export function drawHuijiuGrid(
   x: number,
   y: number,
   size: number,
-  color: string = '#d1d5db'
+  color: string = "#d1d5db",
 ): void {
   ctx.save();
   const inset = size * 0.12;
@@ -586,7 +619,7 @@ export function drawYuanmiGrid(
   x: number,
   y: number,
   size: number,
-  color: string = '#d1d5db'
+  color: string = "#d1d5db",
 ): void {
   ctx.save();
   ctx.strokeStyle = color;
@@ -615,11 +648,7 @@ export function drawCellGridPaper(
   width: number,
   height: number,
   settings: PaperSettings,
-  cell:
-    | 'tian'
-    | 'mi'
-    | 'huigong'
-    | 'fang'
+  cell: "tian" | "mi" | "huigong" | "fang",
 ): void {
   const gridPx = mmToPx(settings.gridSize);
   const m = toMarginPx(settings.margin);
@@ -627,9 +656,9 @@ export function drawCellGridPaper(
 
   for (let y = m.top; y + gridPx <= height - m.bottom + 0.5; y += gridPx) {
     for (let x = m.left; x + gridPx <= width - m.right + 0.5; x += gridPx) {
-      if (cell === 'tian') drawTianGrid(ctx, x, y, gridPx, color);
-      else if (cell === 'mi') drawMiGrid(ctx, x, y, gridPx, color);
-      else if (cell === 'huigong') drawHuigongGrid(ctx, x, y, gridPx, color);
+      if (cell === "tian") drawTianGrid(ctx, x, y, gridPx, color);
+      else if (cell === "mi") drawMiGrid(ctx, x, y, gridPx, color);
+      else if (cell === "huigong") drawHuigongGrid(ctx, x, y, gridPx, color);
       else drawFangGrid(ctx, x, y, gridPx, color);
     }
   }
@@ -642,44 +671,51 @@ export function drawPaper(
   height: number,
   settings: PaperSettings,
   pageIndex: number = 1,
-  pageCount: number = 1
+  pageCount: number = 1,
 ): void {
   drawPaperBackground(ctx, width, height, settings);
   drawTexture(ctx, width, height, settings);
 
   switch (settings.type) {
-    case 'grid':
+    case "grid":
       drawGridPaper(ctx, width, height, settings);
       break;
-    case 'line':
+    case "line":
       drawLinePaper(ctx, width, height, settings);
       break;
-    case 'dot':
+    case "dot":
       drawDotPaper(ctx, width, height, settings);
       break;
-    case 'cornell':
+    case "cornell":
       drawCornellPaper(ctx, width, height, settings);
       break;
-    case 'staff':
+    case "staff":
       drawStaffPaper(ctx, width, height, settings);
       break;
-    case 'tian':
-      drawCellGridPaper(ctx, width, height, settings, 'tian');
+    case "tian":
+      drawCellGridPaper(ctx, width, height, settings, "tian");
       break;
-    case 'mi':
-      drawCellGridPaper(ctx, width, height, settings, 'mi');
+    case "mi":
+      drawCellGridPaper(ctx, width, height, settings, "mi");
       break;
-    case 'huigong':
-      drawCellGridPaper(ctx, width, height, settings, 'huigong');
+    case "huigong":
+      drawCellGridPaper(ctx, width, height, settings, "huigong");
       break;
-    case 'pinyin':
+    case "pinyin":
       drawPinyinPaper(ctx, width, height, settings);
       break;
-    case 'essay':
+    case "essay":
       drawEssayPaper(ctx, width, height, settings);
       break;
   }
 
-  drawWatermark(ctx, width, height, settings.watermark, settings.watermarkColor);
-  if (settings.showPageNumber) drawPageNumber(ctx, width, height, pageIndex, pageCount);
+  drawWatermark(
+    ctx,
+    width,
+    height,
+    settings.watermark,
+    settings.watermarkColor,
+  );
+  if (settings.showPageNumber)
+    drawPageNumber(ctx, width, height, pageIndex, pageCount);
 }
