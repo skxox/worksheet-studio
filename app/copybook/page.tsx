@@ -2,8 +2,8 @@
 
 import React, {
   useCallback,
-  useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
 } from "react";
@@ -31,6 +31,8 @@ import {
   fontStack,
 } from "@/lib/fonts";
 import { drawCopybook, STROKE_PRESET } from "@/lib/copybook";
+import type { PinyinToggleMarker } from "@/lib/copybook";
+import { charAllPinyins } from "@/lib/pinyin";
 import { getCanvasSize, PAPER_SIZES } from "@/lib/paper";
 import type {
   CopybookSettings,
@@ -49,6 +51,30 @@ const GRID_TYPES: { value: GridType; label: string }[] = [
 ];
 
 const GRID_SIZES = [8, 10, 12, 15, 20];
+
+const COPYBOOK_TYPES: { value: CopybookType; label: string }[] = [
+  { value: "character", label: "汉字" },
+  { value: "word", label: "词组" },
+  { value: "paragraph", label: "段落" },
+  { value: "pinyin", label: "拼音" },
+  { value: "stroke", label: "笔画" },
+  { value: "english-char", label: "英文字母" },
+  { value: "english-word", label: "英文单词" },
+  { value: "english-para", label: "英文段落" },
+  { value: "number", label: "数字" },
+  { value: "control", label: "控笔" },
+];
+
+type RenderMode = CopybookSettings["renderMode"];
+const VALID_TYPES: CopybookType[] = COPYBOOK_TYPES.map((item) => item.value);
+const VALID_GRID_TYPES: GridType[] = [
+  "tian",
+  "mi",
+  "huigong",
+  "fang",
+  "jiugong",
+];
+const VALID_RENDER_MODES: RenderMode[] = ["solid", "miao", "hollow"];
 
 const COMMON_FONT_OPTIONS = COMMON_FONT_KEYS.map((key) => ({
   value: key,
@@ -98,6 +124,7 @@ const DEFAULT_SETTINGS: CopybookSettings = {
   highlightFirst: true,
   insertEmptyRow: false,
   insertEmptyCol: false,
+  pinyinOverrides: {},
   lineSpacing: 12,
   paperSize: PAPER_SIZES[0],
 };
@@ -108,6 +135,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function toFiniteNumber(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 function resolvePaperSize(value: unknown): PaperSize {
@@ -124,12 +155,25 @@ function resolvePaperSize(value: unknown): PaperSize {
 
 function resolveMargin(value: unknown): Margin {
   if (!isRecord(value)) return DEFAULT_SETTINGS.margin;
+  const base = DEFAULT_SETTINGS.margin;
   return {
-    top: toFiniteNumber(value.top, DEFAULT_SETTINGS.margin.top),
-    right: toFiniteNumber(value.right, DEFAULT_SETTINGS.margin.right),
-    bottom: toFiniteNumber(value.bottom, DEFAULT_SETTINGS.margin.bottom),
-    left: toFiniteNumber(value.left, DEFAULT_SETTINGS.margin.left),
+    top: clamp(toFiniteNumber(value.top, base.top), 10, 100),
+    right: clamp(toFiniteNumber(value.right, base.right), 10, 100),
+    bottom: clamp(toFiniteNumber(value.bottom, base.bottom), 10, 100),
+    left: clamp(toFiniteNumber(value.left, base.left), 10, 100),
   };
+}
+
+/** 校验多音字覆盖表：只保留“字 → 有限整数索引”的项 */
+function resolvePinyinOverrides(value: unknown): Record<string, number> {
+  if (!isRecord(value)) return {};
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(value)) {
+    if (typeof v === "number" && Number.isFinite(v)) {
+      out[k] = Math.floor(v);
+    }
+  }
+  return out;
 }
 
 export default function CopybookPage() {
@@ -137,12 +181,46 @@ export default function CopybookPage() {
     "ws:copybook",
     DEFAULT_SETTINGS,
   );
+  // safeSettings：对所有从 localStorage 反序列化回来的字段做类型/范围校验，
+  // 避免脏数据（缺字段、NaN、越界、非法枚举）导致绘制崩溃或越界。
   const safeSettings = useMemo<CopybookSettings>(
     () => ({
       ...settings,
-      paperSize: resolvePaperSize(settings.paperSize),
+      type: VALID_TYPES.includes(settings.type as CopybookType)
+        ? (settings.type as CopybookType)
+        : "character",
+      content: typeof settings.content === "string" ? settings.content : "",
+      fontFamily:
+        typeof settings.fontFamily === "string" ? settings.fontFamily : "kaiti",
+      fontWeight: settings.fontWeight === "bold" ? "bold" : "normal",
+      gridType: VALID_GRID_TYPES.includes(settings.gridType as GridType)
+        ? (settings.gridType as GridType)
+        : "tian",
+      gridSize: clamp(toFiniteNumber(settings.gridSize, 10), 5, 40),
+      rowGap: clamp(toFiniteNumber(settings.rowGap, 2), 0, 20),
       margin: resolveMargin(settings.margin),
-      renderMode: "miao",
+      fontScale: clamp(toFiniteNumber(settings.fontScale, 68), 10, 150),
+      fontSize: clamp(toFiniteNumber(settings.fontSize, 28), 8, 96),
+      vOffset: clamp(toFiniteNumber(settings.vOffset, 0), -50, 50),
+      renderMode: VALID_RENDER_MODES.includes(settings.renderMode as RenderMode)
+        ? (settings.renderMode as RenderMode)
+        : "miao",
+      solidCount: clamp(toFiniteNumber(settings.solidCount, 20), 0, 100),
+      miaoColor:
+        typeof settings.miaoColor === "string"
+          ? settings.miaoColor
+          : "#cfd5de",
+      lineColor:
+        typeof settings.lineColor === "string" ? settings.lineColor : "#98a5b9",
+      color: typeof settings.color === "string" ? settings.color : "#1f2937",
+      showPinyin: settings.showPinyin !== false,
+      showStroke: settings.showStroke === true,
+      highlightFirst: settings.highlightFirst !== false,
+      insertEmptyRow: settings.insertEmptyRow === true,
+      insertEmptyCol: settings.insertEmptyCol === true,
+      pinyinOverrides: resolvePinyinOverrides(settings.pinyinOverrides),
+      lineSpacing: clamp(toFiniteNumber(settings.lineSpacing, 12), 0, 80),
+      paperSize: resolvePaperSize(settings.paperSize),
     }),
     [settings],
   );
@@ -167,6 +245,23 @@ export default function CopybookPage() {
     null | "font" | "margin" | "miaoColor" | "lineColor" | "color"
   >(null);
 
+  // 字体面板的 tab / 自定义输入需跟随实际生效的 fontFamily。
+  // useState 初始化只在挂载时跑一次（此时 localStorage 尚未载入），所以用 React
+  // 官方“渲染期间按外部来源调整 state”的模式同步：当持久化字体变化（含挂载后载入）
+  // 时重置面板 tab 与自定义输入，避免面板显示与实际字体不一致。
+  const [syncedFont, setSyncedFont] = useState(settings.fontFamily);
+  if (settings.fontFamily !== syncedFont) {
+    setSyncedFont(settings.fontFamily);
+    const f =
+      typeof settings.fontFamily === "string" ? settings.fontFamily : "";
+    setFontTab(
+      (LOCAL_FONT_KEYS as readonly string[]).includes(f) || f.startsWith("local:")
+        ? "local"
+        : "common",
+    );
+    setCustomLocalFont(f.startsWith("local:") ? f.slice("local:".length) : "");
+  }
+
   const fontReady = useFontLoader(safeSettings.fontFamily);
   const strokesReady = useStrokeData(
     safeSettings.content,
@@ -175,33 +270,42 @@ export default function CopybookPage() {
   const { exportPDF } = useExport();
   const canvasSize = getCanvasSize(safeSettings.paperSize);
 
+  // 多音字读音候选菜单：{ 字, 菜单左上角相对画布的坐标 }
+  const [pinyinMenu, setPinyinMenu] = useState<{
+    char: string;
+    left: number;
+    top: number;
+  } | null>(null);
+
+  // 多音字切换按钮的命中区：由 drawCopybook 在每次绘制时回填，点击事件据此命中检测
+  const toggleMarkersRef = useRef<PinyinToggleMarker[]>([]);
+
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-      drawCopybook(ctx, width, height, safeSettings);
+      drawCopybook(ctx, width, height, safeSettings, toggleMarkersRef.current);
     },
-    [safeSettings],
+    // fontReady / strokesReady 不参与绘制参数，仅作为重绘触发依赖：
+    // 字体/笔顺数据就绪后由 useCanvas 自动重绘一次，避免手动 redraw 叠加成多次重绘。
+    // 故 exhaustive-deps 视其为“多余依赖”，此处有意保留并放行。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [safeSettings, fontReady, strokesReady],
   );
 
-  const { canvasRef, redraw } = useCanvas({
+  const { canvasRef } = useCanvas({
     width: canvasSize.width,
     height: canvasSize.height,
     onDraw: draw,
   });
-
-  // 笔顺数据就绪后重绘一次
-  useEffect(() => {
-    if (strokesReady) redraw();
-  }, [strokesReady, redraw]);
-
-  useEffect(() => {
-    if (fontReady) redraw();
-  }, [fontReady, redraw]);
 
   const updateSetting = <K extends keyof CopybookSettings>(
     key: K,
     value: CopybookSettings[K],
   ) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
+  };
+  const changeType = (type: CopybookType) => {
+    // 切换字帖类型时同步重置为该类型的默认内容，避免“汉字”内容留在“英文/控笔”模式里。
+    setSettings((prev) => ({ ...prev, type, content: DEFAULT_CONTENT[type] }));
   };
   const updateMargin = (key: keyof Margin, value: number) => {
     const next = Number.isFinite(value)
@@ -236,6 +340,47 @@ export default function CopybookPage() {
     w.document.close();
   };
 
+  // 把鼠标坐标换算成画布逻辑坐标（兼容 HiDPI / CSS 缩放）
+  const eventToCanvasPoint = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    const rect = canvas?.getBoundingClientRect();
+    if (!canvas || !rect || rect.width === 0 || rect.height === 0) return null;
+    return {
+      x: ((e.clientX - rect.left) * canvasSize.width) / rect.width,
+      y: ((e.clientY - rect.top) * canvasSize.height) / rect.height,
+    };
+  };
+
+  const hitTestToggle = (p: { x: number; y: number }) =>
+    toggleMarkersRef.current.find(
+      (t) => p.x >= t.x && p.x <= t.x + t.w && p.y >= t.y && p.y <= t.y + t.h,
+    );
+
+  // 点击多音字按钮 → 在按钮下方弹出读音下拉框
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const p = eventToCanvasPoint(e);
+    if (!p) return;
+    const hit = hitTestToggle(p);
+    if (!hit) return;
+    setPinyinMenu({ char: hit.char, left: hit.x, top: hit.y + hit.h });
+  };
+
+  // 从下拉框里选定某字的一个读音
+  const pickPinyin = (char: string, idx: number) => {
+    setSettings((prev) => ({
+      ...prev,
+      pinyinOverrides: { ...(prev.pinyinOverrides ?? {}), [char]: idx },
+    }));
+    setPinyinMenu(null);
+  };
+
+  const handleCanvasMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const p = eventToCanvasPoint(e);
+    canvas.style.cursor = p && hitTestToggle(p) ? "pointer" : "default";
+  };
+
   const t = safeSettings.type;
   const isGridMode = [
     "character",
@@ -244,9 +389,15 @@ export default function CopybookPage() {
     "stroke",
     "pinyin",
   ].includes(t);
+  const isEnglishGridMode = t === "english-char" || t === "english-word";
   const isLineMode = t === "paragraph" || t === "english-para";
-  const showPinyinToggle = ["character", "word", "pinyin"].includes(t);
+  // 拼音类型在绘制端强制显示拼音，开关对它无效，故不展示，避免误导。
+  const showPinyinToggle = ["character", "word"].includes(t);
   const marginSummary = `${safeSettings.margin.top}, ${safeSettings.margin.right}, ${safeSettings.margin.bottom}, ${safeSettings.margin.left}`;
+  const pinyinReadings = pinyinMenu ? charAllPinyins(pinyinMenu.char) : [];
+  const pinyinCurrent = pinyinMenu
+    ? safeSettings.pinyinOverrides[pinyinMenu.char] ?? 0
+    : 0;
 
   return (
     <main
@@ -267,7 +418,7 @@ export default function CopybookPage() {
           >
             <div
               id="print-body"
-              className="print-papges pointer-events-none"
+              className="pointer-events-none"
               style={{
                 minWidth: `${canvasSize.width}px`,
                 minHeight: `${canvasSize.height}px`,
@@ -280,18 +431,50 @@ export default function CopybookPage() {
                 style={{
                   width: `${canvasSize.width}px`,
                   height: `${canvasSize.height}px`,
+                  // 父级 #print-body 为 pointer-events:none，此处放开以接收多音字切换点击
+                  pointerEvents: "auto",
                 }}
+                onClick={handleCanvasClick}
+                onMouseMove={handleCanvasMove}
               />
             </div>
-            <div className="print-none absolute top-0 left-0 z-10">
-              <div
-                className="print-page relative"
-                style={{
-                  width: `${canvasSize.width}px`,
-                  height: `${canvasSize.height}px`,
-                }}
-              />
-            </div>
+            {pinyinMenu && (
+              <>
+                {/* 点击外部关闭 */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setPinyinMenu(null)}
+                  aria-hidden
+                />
+                {/* 读音下拉框：相对画布定位，随页面滚动 */}
+                <div
+                  role="listbox"
+                  aria-label={`${pinyinMenu.char} 的读音`}
+                  className="absolute z-50 min-w-28 overflow-hidden rounded-md border border-input bg-background p-1 shadow-lg"
+                  style={{ left: pinyinMenu.left, top: pinyinMenu.top }}
+                >
+                  {pinyinReadings.map((py, i) => (
+                    <button
+                      key={py + i}
+                      type="button"
+                      role="option"
+                      aria-selected={i === pinyinCurrent}
+                      onClick={() => pickPinyin(pinyinMenu.char, i)}
+                      className={`flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent ${
+                        i === pinyinCurrent
+                          ? "bg-accent/60 font-medium text-foreground"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      <span>{py}</span>
+                      {i === pinyinCurrent && (
+                        <Check className="h-3.5 w-3.5 text-primary" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </section>
 
@@ -317,6 +500,15 @@ export default function CopybookPage() {
               <Printer className="h-4 w-4" />打 印
             </Button>
           </div>
+
+          <PanelCard>
+            <CompactSelectRow
+              label="字帖类型"
+              value={t}
+              options={COPYBOOK_TYPES}
+              onValueChange={(value) => changeType(value as CopybookType)}
+            />
+          </PanelCard>
 
           {t !== "control" && (
             <Textarea
@@ -515,11 +707,33 @@ export default function CopybookPage() {
                   onChange={(value) => updateSetting("lineSpacing", value)}
                 />
               </>
+            ) : isEnglishGridMode ? (
+              <CompactSliderRow
+                label="字号"
+                value={safeSettings.fontSize}
+                unit="px"
+                min={14}
+                max={48}
+                step={1}
+                onChange={(value) => updateSetting("fontSize", value)}
+              />
             ) : null}
           </PanelCard>
 
           {isGridMode && (
             <PanelCard>
+              <CompactSelectRow
+                label="字色模式"
+                value={safeSettings.renderMode}
+                options={[
+                  { value: "miao", label: "描红" },
+                  { value: "solid", label: "实心" },
+                  { value: "hollow", label: "空心" },
+                ]}
+                onValueChange={(value) =>
+                  updateSetting("renderMode", value as RenderMode)
+                }
+              />
               <CompactSliderRow
                 label="描红数量"
                 value={safeSettings.solidCount}

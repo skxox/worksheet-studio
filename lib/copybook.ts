@@ -8,13 +8,75 @@ import {
   drawFangGrid,
   drawJiugongGrid,
 } from "@/lib/paper";
-import { charToPinyin } from "@/lib/pinyin";
+import { charAllPinyins } from "@/lib/pinyin";
 import { drawCharStrokes, peekStroke } from "@/lib/stroke";
 
 export type RenderModeLike = CopybookSettings["renderMode"];
 
 /** 笔画字帖预设：横竖撇捺点提等基本笔画 */
 export const STROKE_PRESET = "一丨丿㇏丶㇀𠃋𠃌";
+
+/** 多音字切换按钮的命中区域（画布逻辑坐标，供页面层做点击命中检测） */
+export interface PinyinToggleMarker {
+  char: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** 圆角矩形路径（不依赖较新的 ctx.roundRect，兼容旧浏览器） */
+function roundRectPath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  const rr = Math.max(0, Math.min(r, w / 2, h / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+/** 取某字在当前设置下的实际拼音（带声调），尊重多音字手选覆盖 */
+function effectivePinyin(ch: string, settings: CopybookSettings): string {
+  const all = charAllPinyins(ch);
+  if (all.length === 0) return "";
+  const overrides = settings.pinyinOverrides ?? {};
+  const idx = typeof overrides[ch] === "number" ? overrides[ch] : 0;
+  return all[Math.max(0, Math.min(idx, all.length - 1))] ?? all[0];
+}
+
+/** 在左侧页边距空白处绘制 "1/3" 样式的多音字切换按钮 */
+function drawPinyinToggle(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  current: number,
+  total: number,
+) {
+  ctx.save();
+  ctx.fillStyle = "#eef2ff";
+  ctx.strokeStyle = "#818cf8";
+  ctx.lineWidth = 1;
+  roundRectPath(ctx, x, y, w, h, Math.min(5, h / 2));
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#4338ca";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `bold ${Math.max(8, h * 0.5)}px ui-sans-serif, system-ui, sans-serif`;
+  ctx.fillText(`${current}/${total}`, x + w / 2, y + h / 2 + 0.5);
+  ctx.restore();
+}
 
 function setFont(
   ctx: CanvasRenderingContext2D,
@@ -101,25 +163,70 @@ function drawCellBox(
   }
 }
 
-/** 拼音格：浅框 + 居中拼音（与下方汉字格同宽对齐） */
-function drawPinyinCell(
+/** 拼音四线三格：整行连续 4 条横线（上、下实线，中间两条虚线），高度 h 均分 3 格；
+ *  最外左、右两侧加竖向实线边框，与下方字格连成一体（底边与字格顶边重合）。
+ *  实线边框的线宽与颜色（frameColor）与文字方格保持一致；中间两条虚线为浅灰导引线。 */
+function drawPinyinRule(
   ctx: CanvasRenderingContext2D,
-  py: string,
   x: number,
   y: number,
-  cell: number,
+  w: number,
+  h: number,
+  frameColor: string,
 ) {
+  const gap = h / 3;
   ctx.save();
-  ctx.strokeStyle = "#e3e3e3";
+  // 中间两条虚线导引（浅灰、细）
+  ctx.strokeStyle = "#b8c2d0";
   ctx.lineWidth = 0.6;
-  ctx.strokeRect(x, y, cell, cell);
-  if (py) {
-    ctx.fillStyle = "#8a8a8a";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = `${cell * 0.34}px ui-sans-serif, system-ui, sans-serif`;
-    ctx.fillText(py, x + cell / 2, y + cell / 2);
+  ctx.setLineDash([3, 2]);
+  for (const i of [1, 2]) {
+    ctx.beginPath();
+    ctx.moveTo(x, y + i * gap);
+    ctx.lineTo(x + w, y + i * gap);
+    ctx.stroke();
   }
+  // 实线边框：上、下、左、右，颜色与线宽与文字方格一致
+  ctx.setLineDash([]);
+  ctx.strokeStyle = frameColor;
+  ctx.lineWidth = 1;
+  for (const i of [0, 3]) {
+    ctx.beginPath();
+    ctx.moveTo(x, y + i * gap);
+    ctx.lineTo(x + w, y + i * gap);
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x, y + h);
+  ctx.moveTo(x + w, y);
+  ctx.lineTo(x + w, y + h);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** 在四线三格上写一个拼音：基线落在第 3 条线（y+2*gap），水平居中，按宽度自适应缩字号 */
+function drawPinyinText(
+  ctx: CanvasRenderingContext2D,
+  py: string,
+  cx: number,
+  y: number,
+  h: number,
+  maxW: number,
+) {
+  if (!py) return;
+  const gap = h / 3;
+  ctx.save();
+  ctx.fillStyle = "#8a8a8a";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  let fs = h * 0.5;
+  ctx.font = `${fs}px ui-sans-serif, system-ui, sans-serif`;
+  while (ctx.measureText(py).width > maxW && fs > 8) {
+    fs -= 1;
+    ctx.font = `${fs}px ui-sans-serif, system-ui, sans-serif`;
+  }
+  ctx.fillText(py, cx, y + 2 * gap);
   ctx.restore();
 }
 
@@ -150,13 +257,15 @@ function drawCharacterCopybook(
   m: MarginPx,
   contentWidth: number,
   contentHeight: number,
+  markers?: PinyinToggleMarker[],
 ) {
   const cell = mmToPx(settings.gridSize);
   const cols = Math.max(1, Math.floor(contentWidth / cell));
   const chars = Array.from(settings.content).filter((c) => c.trim().length > 0);
 
   const strokeRowH = settings.showStroke ? cell * 0.7 : 0;
-  const pinyinRowH = settings.showPinyin ? cell : 0; // 与汉字格等高、列对齐
+  // 拼音四线三格行高比字格略矮一点，拼音字号随之等比缩小
+  const pinyinRowH = settings.showPinyin ? cell * 0.8 : 0;
   const rowGap = mmToPx(settings.rowGap);
   const maxY = m.top + contentHeight;
 
@@ -180,15 +289,47 @@ function drawCharacterCopybook(
     }
 
     if (settings.showPinyin) {
-      const py = ch ? charToPinyin(ch) : "";
+      const py = ch ? effectivePinyin(ch, settings) : "";
+      // 多音字：在行首左侧页边距空白处放一个可点击切换按钮，并把命中区记入 markers
+      if (ch && markers) {
+        const all = charAllPinyins(ch);
+        if (all.length > 1 && m.left >= 14) {
+          const btnH = Math.min(pinyinRowH * 0.6, 20);
+          const btnW = Math.min(btnH * 1.15, m.left - 4);
+          const bx = m.left - btnW - 2;
+          const by = y + (pinyinRowH - btnH) / 2;
+          const cur = Math.max(
+            0,
+            Math.min(settings.pinyinOverrides?.[ch] ?? 0, all.length - 1),
+          );
+          drawPinyinToggle(ctx, bx, by, btnW, btnH, cur + 1, all.length);
+          markers.push({ char: ch, x: bx, y: by, w: btnW, h: btnH });
+        }
+      }
+      // 四线三格：整行连续横线 + 最外两侧竖向边框（与下方字格一体）
+      drawPinyinRule(ctx, m.left, y, cols * cell, pinyinRowH, settings.lineColor);
+      // 每个练习列居中写一个拼音（插入空列时仅偶数列）
       for (let c = 0; c < cols; c++) {
-        drawPinyinCell(ctx, py, m.left + c * cell, y, cell);
+        const slot = !settings.insertEmptyCol || c % 2 === 0;
+        if (slot && py) {
+          drawPinyinText(
+            ctx,
+            py,
+            m.left + c * cell + cell / 2,
+            y,
+            pinyinRowH,
+            cell - 4,
+          );
+        }
       }
       y += pinyinRowH;
     }
 
     for (let c = 0; c < cols; c++) {
-      if (ch && shouldRenderPracticeChar(settings, c)) {
+      // 插入空列：字落在偶数列，练习字序号按实际字数计算
+      const slot = !settings.insertEmptyCol || c % 2 === 0;
+      const idx = settings.insertEmptyCol ? Math.floor(c / 2) : c;
+      if (slot && ch && shouldRenderPracticeChar(settings, idx)) {
         drawCharCell(
           ctx,
           ch,
@@ -196,7 +337,7 @@ function drawCharacterCopybook(
           y,
           cell,
           settings,
-          practiceCellStyle(settings, c),
+          practiceCellStyle(settings, idx),
         );
       } else {
         drawCellBox(
@@ -217,6 +358,13 @@ function drawCharacterCopybook(
   for (const ch of chars) {
     y = drawPracticeGroup(y, ch);
     if (y > maxY) break;
+    // 插入空行：在每两个字块之间补一行空格
+    if (settings.insertEmptyRow && y + cell <= maxY) {
+      for (let c = 0; c < cols; c++) {
+        drawCellBox(ctx, settings.gridType, m.left + c * cell, y, cell, settings.lineColor);
+      }
+      y += cell + rowGap;
+    }
   }
 
   // 内容画完后继续铺满整页练习格，符合字帖工坊的使用预期。
@@ -271,7 +419,8 @@ function drawParagraphCopybook(
       : settings.renderMode === "miao"
         ? "trace"
         : "solid";
-  yBase = m.top + lineHeight - settings.lineSpacing / 2;
+  // 范字基线与横线对齐：字坐在横线上，便于描摹（原先上浮 lineSpacing/2）
+  yBase = m.top + lineHeight;
   for (let i = 0; i < lines.length && yBase <= m.top + contentHeight; i++) {
     paintChar(
       ctx,
@@ -409,7 +558,8 @@ function drawEnglishParagraphCopybook(
       : settings.renderMode === "miao"
         ? "trace"
         : "solid";
-  yBase = m.top + lineHeight - settings.lineSpacing / 2;
+  // 范字基线与横线对齐：字坐在横线上，便于描摹（原先上浮 lineSpacing/2）
+  yBase = m.top + lineHeight;
   for (let i = 0; i < lines.length && yBase <= m.top + contentHeight; i++) {
     paintChar(
       ctx,
@@ -515,7 +665,11 @@ export function drawCopybook(
   width: number,
   height: number,
   settings: CopybookSettings,
+  markers?: PinyinToggleMarker[],
 ): void {
+  // 每次重绘前清空命中区，由 drawCharacterCopybook 重新填充
+  if (markers) markers.length = 0;
+
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, width, height);
 
@@ -537,13 +691,21 @@ export function drawCopybook(
         m,
         contentWidth,
         contentHeight,
+        markers,
       );
       break;
     case "character":
     case "word":
     case "number":
     case "stroke":
-      drawCharacterCopybook(ctx, settings, m, contentWidth, contentHeight);
+      drawCharacterCopybook(
+        ctx,
+        settings,
+        m,
+        contentWidth,
+        contentHeight,
+        markers,
+      );
       break;
     case "paragraph":
       drawParagraphCopybook(ctx, settings, m, contentWidth, contentHeight);

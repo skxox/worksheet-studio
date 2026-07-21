@@ -101,6 +101,7 @@ export interface CopybookSettings {
   highlightFirst: boolean; // 首字高亮（仅首个练习字作实心示范）
   insertEmptyRow: boolean; // 字间插入空行
   insertEmptyCol: boolean; // 字间插入空列
+  pinyinOverrides: Record<string, number>; // 多音字手选读音：{ 字: 读音索引（charAllPinyins 的下标） }
 
   // —— 行式 ——
   lineSpacing: number; // 段落 / 英文段落行距 px
