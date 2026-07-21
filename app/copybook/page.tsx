@@ -43,11 +43,15 @@ import type {
 } from "@/types";
 
 const GRID_TYPES: { value: GridType; label: string }[] = [
+  { value: "essay", label: "作文格" },
   { value: "tian", label: "田字格" },
   { value: "mi", label: "米字格" },
   { value: "huigong", label: "回宫格" },
-  { value: "fang", label: "方格" },
+  { value: "huitian", label: "回田格" },
+  { value: "huimi", label: "回米格" },
+  { value: "huijiu", label: "回九格" },
   { value: "jiugong", label: "九宫格" },
+  { value: "yuanmi", label: "圆米格" },
 ];
 
 const GRID_SIZES = [8, 10, 12, 15, 20];
@@ -71,8 +75,12 @@ const VALID_GRID_TYPES: GridType[] = [
   "tian",
   "mi",
   "huigong",
-  "fang",
   "jiugong",
+  "essay",
+  "huitian",
+  "huimi",
+  "huijiu",
+  "yuanmi",
 ];
 const VALID_RENDER_MODES: RenderMode[] = ["solid", "miao", "hollow"];
 
@@ -116,7 +124,7 @@ const DEFAULT_SETTINGS: CopybookSettings = {
   renderMode: "miao",
   solidCount: 20,
   groupSpacing: 4,
-  miaoColor: "#cfd5de",
+  miaoColor: "#94a3b8",
   lineColor: "#98a5b9",
   color: "#1f2937",
   highlightColor: "#1f2937",
@@ -197,7 +205,9 @@ export default function CopybookPage() {
       fontWeight: settings.fontWeight === "bold" ? "bold" : "normal",
       gridType: VALID_GRID_TYPES.includes(settings.gridType as GridType)
         ? (settings.gridType as GridType)
-        : "tian",
+        : (settings.gridType as string) === "fang"
+          ? "essay" // 老「方格」已合并为「作文格」（画法相同）
+          : "tian",
       gridSize: clamp(toFiniteNumber(settings.gridSize, 10), 5, 40),
       rowGap: clamp(toFiniteNumber(settings.rowGap, 2), 0, 20),
       margin: resolveMargin(settings.margin),
@@ -209,9 +219,10 @@ export default function CopybookPage() {
         : "miao",
       solidCount: clamp(toFiniteNumber(settings.solidCount, 20), 0, 100),
       miaoColor:
-        typeof settings.miaoColor === "string"
+        typeof settings.miaoColor === "string" &&
+        settings.miaoColor !== "#cfd5de" // 旧默认值迁移到新默认，避免老持久化数据盖回 #94a3b8
           ? settings.miaoColor
-          : "#cfd5de",
+          : "#94a3b8",
       lineColor:
         typeof settings.lineColor === "string" ? settings.lineColor : "#98a5b9",
       color: typeof settings.color === "string" ? settings.color : "#1f2937",

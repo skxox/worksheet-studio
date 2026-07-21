@@ -5,8 +5,12 @@ import {
   drawTianGrid,
   drawMiGrid,
   drawHuigongGrid,
-  drawFangGrid,
   drawJiugongGrid,
+  drawEssayGrid,
+  drawHuitianGrid,
+  drawHuimiGrid,
+  drawHuijiuGrid,
+  drawYuanmiGrid,
 } from "@/lib/paper";
 import { charAllPinyins } from "@/lib/pinyin";
 import { drawCharStrokes, peekStroke } from "@/lib/stroke";
@@ -164,8 +168,23 @@ function drawCellBox(
     case "jiugong":
       drawJiugongGrid(ctx, x, y, size, color);
       break;
+    case "essay":
+      drawEssayGrid(ctx, x, y, size, color);
+      break;
+    case "huitian":
+      drawHuitianGrid(ctx, x, y, size, color);
+      break;
+    case "huimi":
+      drawHuimiGrid(ctx, x, y, size, color);
+      break;
+    case "huijiu":
+      drawHuijiuGrid(ctx, x, y, size, color);
+      break;
+    case "yuanmi":
+      drawYuanmiGrid(ctx, x, y, size, color);
+      break;
     default:
-      drawFangGrid(ctx, x, y, size, color);
+      drawEssayGrid(ctx, x, y, size, color);
       break;
   }
 }

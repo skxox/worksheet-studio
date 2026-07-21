@@ -68,7 +68,16 @@ export type CopybookType =
   | 'number' // 数字字帖
   | 'control'; // 控笔练习
 
-export type GridType = 'tian' | 'mi' | 'huigong' | 'fang' | 'jiugong';
+export type GridType =
+  | 'tian' // 田字格
+  | 'mi' // 米字格
+  | 'huigong' // 回宫格
+  | 'jiugong' // 九宫格
+  | 'essay' // 作文格（稿纸纯方格）
+  | 'huitian' // 回田格（回宫内框 + 田字十字）
+  | 'huimi' // 回米格（回宫内框 + 米字）
+  | 'huijiu' // 回九格（回宫内框 + 九宫 3×3）
+  | 'yuanmi'; // 圆米格（外圆 + 米字）
 
 export interface CopybookSettings {
   type: CopybookType;
@@ -77,7 +86,7 @@ export interface CopybookSettings {
   fontWeight: 'normal' | 'bold';
 
   // —— 格子 ——
-  gridType: GridType; // 田字格/米字格/回宫格/方格/九宫格
+  gridType: GridType; // 田字格/米字格/回宫格/九宫格/作文格/回田格/回米格/回九格/圆米格
   gridSize: number; // mm，方格大小
   rowGap: number; // mm，行间距
   margin: Margin;

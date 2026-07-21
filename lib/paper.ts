@@ -334,6 +334,36 @@ export function drawEssayPaper(
 
 // ============ 单元格格子绘制（字帖 / 田字格纸共用） ============
 
+/** 辅助引导线（十字 / 对角 / 内框 / 3×3 等虚线）线宽。
+ *  外框 / 圆框保持 1px；虚线引导线更细，拉开主次层次，并避免 HiDPI(2x) 下
+ *  逻辑 1px 被渲染成 2 个设备像素而显得过粗（用户反馈米字格偏闷）。 */
+const GUIDE_LINE_WIDTH = 0.5;
+
+/** 虚线引导线的 [短划, 间隙]。比旧的 [4,3]/[3,2] 更细碎，接近主流字帖的细虚线观感。 */
+const GUIDE_DASH: number[] = [2, 2];
+
+/** 画一条经过中心 (cx,cy) 的虚线：拆成「中心→端点1」「中心→端点2」两段分别描边，
+ *  使中心交界恒落在短划起点（而非间隙），避免田字/米字等中心交汇处被虚线间隙截断。
+ *  调用前需已 setLineDash / lineWidth。 */
+function strokeDashedThroughCenter(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number
+): void {
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(x1, y1);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+}
+
 /** 田字格：外框 + 十字虚线 */
 export function drawTianGrid(
   ctx: CanvasRenderingContext2D,
@@ -347,13 +377,12 @@ export function drawTianGrid(
   ctx.lineWidth = 1;
   ctx.strokeRect(x, y, size, size);
 
-  ctx.setLineDash([4, 3]);
-  ctx.beginPath();
-  ctx.moveTo(x + size / 2, y);
-  ctx.lineTo(x + size / 2, y + size);
-  ctx.moveTo(x, y + size / 2);
-  ctx.lineTo(x + size, y + size / 2);
-  ctx.stroke();
+  ctx.lineWidth = GUIDE_LINE_WIDTH;
+  ctx.setLineDash(GUIDE_DASH);
+  const cx = x + size / 2;
+  const cy = y + size / 2;
+  strokeDashedThroughCenter(ctx, cx, cy, cx, y, cx, y + size);
+  strokeDashedThroughCenter(ctx, cx, cy, x, cy, x + size, cy);
   ctx.setLineDash([]);
   ctx.restore();
 }
@@ -371,19 +400,16 @@ export function drawMiGrid(
   ctx.lineWidth = 1;
   ctx.strokeRect(x, y, size, size);
 
-  ctx.setLineDash([4, 3]);
-  ctx.beginPath();
+  ctx.lineWidth = GUIDE_LINE_WIDTH;
+  ctx.setLineDash(GUIDE_DASH);
+  const cx = x + size / 2;
+  const cy = y + size / 2;
   // 十字
-  ctx.moveTo(x + size / 2, y);
-  ctx.lineTo(x + size / 2, y + size);
-  ctx.moveTo(x, y + size / 2);
-  ctx.lineTo(x + size, y + size / 2);
+  strokeDashedThroughCenter(ctx, cx, cy, cx, y, cx, y + size);
+  strokeDashedThroughCenter(ctx, cx, cy, x, cy, x + size, cy);
   // 对角线
-  ctx.moveTo(x, y);
-  ctx.lineTo(x + size, y + size);
-  ctx.moveTo(x + size, y);
-  ctx.lineTo(x, y + size);
-  ctx.stroke();
+  strokeDashedThroughCenter(ctx, cx, cy, x, y, x + size, y + size);
+  strokeDashedThroughCenter(ctx, cx, cy, x + size, y, x, y + size);
   ctx.setLineDash([]);
   ctx.restore();
 }
@@ -401,15 +427,14 @@ export function drawHuigongGrid(
   ctx.lineWidth = 1;
   ctx.strokeRect(x, y, size, size);
 
+  ctx.lineWidth = GUIDE_LINE_WIDTH;
   const inset = size * 0.12;
-  ctx.setLineDash([3, 2]);
+  ctx.setLineDash(GUIDE_DASH);
   ctx.strokeRect(x + inset, y + inset, size - inset * 2, size - inset * 2);
-  ctx.beginPath();
-  ctx.moveTo(x + size / 2, y + inset);
-  ctx.lineTo(x + size / 2, y + size - inset);
-  ctx.moveTo(x + inset, y + size / 2);
-  ctx.lineTo(x + size - inset, y + size / 2);
-  ctx.stroke();
+  const cx = x + size / 2;
+  const cy = y + size / 2;
+  strokeDashedThroughCenter(ctx, cx, cy, cx, y + inset, cx, y + size - inset);
+  strokeDashedThroughCenter(ctx, cx, cy, x + inset, cy, x + size - inset, cy);
   ctx.setLineDash([]);
   ctx.restore();
 }
@@ -441,7 +466,8 @@ export function drawJiugongGrid(
   ctx.strokeStyle = color;
   ctx.lineWidth = 1;
   ctx.strokeRect(x, y, size, size);
-  ctx.setLineDash([3, 2]);
+  ctx.lineWidth = GUIDE_LINE_WIDTH;
+  ctx.setLineDash(GUIDE_DASH);
   ctx.beginPath();
   for (let i = 1; i < 3; i++) {
     ctx.moveTo(x + (i * size) / 3, y);
@@ -450,6 +476,135 @@ export function drawJiugongGrid(
     ctx.lineTo(x + size, y + (i * size) / 3);
   }
   ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+/** 作文格（稿纸格）：纯方格，无内部辅助线，用于作文 / 自由书写练习 */
+export function drawEssayGrid(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string = '#d1d5db'
+): void {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x, y, size, size);
+  ctx.restore();
+}
+
+/** 回宫内框（回田 / 回米 / 回九 共用）：外框（1px 实线）+ 内缩虚线框（细虚线） */
+function strokeHuigongFrame(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string,
+  inset: number
+): void {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x, y, size, size);
+  ctx.lineWidth = GUIDE_LINE_WIDTH;
+  ctx.setLineDash(GUIDE_DASH);
+  ctx.strokeRect(x + inset, y + inset, size - inset * 2, size - inset * 2);
+}
+
+/** 回田格：回宫内框 + 田字十字（满格虚线十字） */
+export function drawHuitianGrid(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string = '#d1d5db'
+): void {
+  ctx.save();
+  const inset = size * 0.12;
+  strokeHuigongFrame(ctx, x, y, size, color, inset);
+  ctx.lineWidth = GUIDE_LINE_WIDTH;
+  const cx = x + size / 2;
+  const cy = y + size / 2;
+  strokeDashedThroughCenter(ctx, cx, cy, cx, y, cx, y + size);
+  strokeDashedThroughCenter(ctx, cx, cy, x, cy, x + size, cy);
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+/** 回米格：回宫内框 + 米字（满格虚线十字 + 对角线） */
+export function drawHuimiGrid(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string = '#d1d5db'
+): void {
+  ctx.save();
+  const inset = size * 0.12;
+  strokeHuigongFrame(ctx, x, y, size, color, inset);
+  ctx.lineWidth = GUIDE_LINE_WIDTH;
+  const cx = x + size / 2;
+  const cy = y + size / 2;
+  // 十字
+  strokeDashedThroughCenter(ctx, cx, cy, cx, y, cx, y + size);
+  strokeDashedThroughCenter(ctx, cx, cy, x, cy, x + size, cy);
+  // 对角线
+  strokeDashedThroughCenter(ctx, cx, cy, x, y, x + size, y + size);
+  strokeDashedThroughCenter(ctx, cx, cy, x + size, y, x, y + size);
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+/** 回九格：回宫内框 + 九宫 3×3（满格虚线） */
+export function drawHuijiuGrid(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string = '#d1d5db'
+): void {
+  ctx.save();
+  const inset = size * 0.12;
+  strokeHuigongFrame(ctx, x, y, size, color, inset);
+  ctx.lineWidth = GUIDE_LINE_WIDTH;
+  ctx.beginPath();
+  for (let i = 1; i < 3; i++) {
+    ctx.moveTo(x + (i * size) / 3, y);
+    ctx.lineTo(x + (i * size) / 3, y + size);
+    ctx.moveTo(x, y + (i * size) / 3);
+    ctx.lineTo(x + size, y + (i * size) / 3);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+/** 圆米格：外接方框 + 内切圆 + 米字（十字 + 对角虚线），书法结构练习常用 */
+export function drawYuanmiGrid(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string = '#d1d5db'
+): void {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x, y, size, size);
+  ctx.beginPath();
+  ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.lineWidth = GUIDE_LINE_WIDTH;
+  ctx.setLineDash(GUIDE_DASH);
+  const cx = x + size / 2;
+  const cy = y + size / 2;
+  // 十字
+  strokeDashedThroughCenter(ctx, cx, cy, cx, y, cx, y + size);
+  strokeDashedThroughCenter(ctx, cx, cy, x, cy, x + size, cy);
+  // 对角线
+  strokeDashedThroughCenter(ctx, cx, cy, x, y, x + size, y + size);
+  strokeDashedThroughCenter(ctx, cx, cy, x + size, y, x, y + size);
   ctx.setLineDash([]);
   ctx.restore();
 }
