@@ -119,9 +119,11 @@ const DEFAULT_SETTINGS: CopybookSettings = {
   miaoColor: "#cfd5de",
   lineColor: "#98a5b9",
   color: "#1f2937",
+  highlightColor: "#1f2937",
   showPinyin: false,
   showStroke: false,
   highlightFirst: true,
+  highlightCount: 1,
   insertEmptyRow: false,
   insertEmptyCol: false,
   pinyinOverrides: {},
@@ -213,9 +215,14 @@ export default function CopybookPage() {
       lineColor:
         typeof settings.lineColor === "string" ? settings.lineColor : "#98a5b9",
       color: typeof settings.color === "string" ? settings.color : "#1f2937",
+      highlightColor:
+        typeof settings.highlightColor === "string"
+          ? settings.highlightColor
+          : "#1f2937",
       showPinyin: settings.showPinyin !== false,
       showStroke: settings.showStroke === true,
       highlightFirst: settings.highlightFirst !== false,
+      highlightCount: clamp(toFiniteNumber(settings.highlightCount, 1), 1, 5),
       insertEmptyRow: settings.insertEmptyRow === true,
       insertEmptyCol: settings.insertEmptyCol === true,
       pinyinOverrides: resolvePinyinOverrides(settings.pinyinOverrides),
@@ -242,7 +249,7 @@ export default function CopybookPage() {
       : "";
   });
   const [expandedPanel, setExpandedPanel] = useState<
-    null | "font" | "margin" | "miaoColor" | "lineColor" | "color"
+    null | "font" | "margin" | "miaoColor" | "lineColor" | "color" | "highlightColor"
   >(null);
 
   // 字体面板的 tab / 自定义输入需跟随实际生效的 fontFamily。
@@ -323,7 +330,13 @@ export default function CopybookPage() {
     updateSetting("fontFamily", `local:${name}`);
   };
   const togglePanel = (
-    panel: "font" | "margin" | "miaoColor" | "lineColor" | "color",
+    panel:
+      | "font"
+      | "margin"
+      | "miaoColor"
+      | "lineColor"
+      | "color"
+      | "highlightColor",
   ) => {
     setExpandedPanel((prev) => (prev === panel ? null : panel));
   };
@@ -743,6 +756,17 @@ export default function CopybookPage() {
                 step={1}
                 onChange={(value) => updateSetting("solidCount", value)}
               />
+              {safeSettings.renderMode === "miao" && (
+                <CompactSliderRow
+                  label="高亮数量"
+                  value={safeSettings.highlightCount}
+                  unit=""
+                  min={1}
+                  max={5}
+                  step={1}
+                  onChange={(value) => updateSetting("highlightCount", value)}
+                />
+              )}
               <CompactColorRow
                 label="描红颜色"
                 value={safeSettings.miaoColor}
@@ -750,6 +774,15 @@ export default function CopybookPage() {
                 onToggle={() => togglePanel("miaoColor")}
                 onChange={(value) => updateSetting("miaoColor", value)}
               />
+              {safeSettings.renderMode === "miao" && (
+                <CompactColorRow
+                  label="高亮颜色"
+                  value={safeSettings.highlightColor}
+                  expanded={expandedPanel === "highlightColor"}
+                  onToggle={() => togglePanel("highlightColor")}
+                  onChange={(value) => updateSetting("highlightColor", value)}
+                />
+              )}
               <CompactColorRow
                 label="线条颜色"
                 value={safeSettings.lineColor}

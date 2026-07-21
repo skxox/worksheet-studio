@@ -125,15 +125,22 @@ function shouldRenderPracticeChar(
   return index < Math.max(0, settings.solidCount);
 }
 
-/** 按 renderMode + 首字高亮决定该格是实心还是空心 */
-function practiceCellStyle(
+/** 练习字渲染外观：style（实心/描红/空心）+ 该 style 下应使用的主色。
+ *  - solid/hollow 模式：全部用字色 color（hollow 时 paintChar 用 miaoColor 描边）。
+ *  - miao 模式：开启 highlightFirst 时，前 highlightCount 个字作实心示范（highlightColor），其余描红（miaoColor）。 */
+function practiceCellLook(
   settings: CopybookSettings,
   index: number,
-): "solid" | "trace" | "hollow" {
-  if (settings.renderMode === "solid") return "solid";
-  if (settings.renderMode === "hollow") return "hollow";
-  if (settings.highlightFirst && index === 0) return "solid";
-  return "trace";
+): { style: "solid" | "trace" | "hollow"; color: string } {
+  if (settings.renderMode === "solid") return { style: "solid", color: settings.color };
+  if (settings.renderMode === "hollow") return { style: "hollow", color: settings.color };
+  if (
+    settings.highlightFirst &&
+    index < Math.max(0, settings.highlightCount)
+  ) {
+    return { style: "solid", color: settings.highlightColor };
+  }
+  return { style: "trace", color: settings.miaoColor };
 }
 
 function drawCellBox(
@@ -205,7 +212,8 @@ function drawPinyinRule(
   ctx.restore();
 }
 
-/** 在四线三格上写一个拼音：基线落在第 3 条线（y+2*gap），水平居中，按宽度自适应缩字号 */
+/** 在四线三格上写一个拼音：基线落在第 3 条线（y+2*gap），水平居中，按宽度自适应缩字号。
+ *  颜色跟随传入的 color（页面层传字色 settings.color），不再硬编码灰色。 */
 function drawPinyinText(
   ctx: CanvasRenderingContext2D,
   py: string,
@@ -213,11 +221,12 @@ function drawPinyinText(
   y: number,
   h: number,
   maxW: number,
+  color: string,
 ) {
   if (!py) return;
   const gap = h / 3;
   ctx.save();
-  ctx.fillStyle = "#8a8a8a";
+  ctx.fillStyle = color;
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   // 字号约为行高的 0.66：让小写 x-height 正好填满中间格（一格 = h/3）
@@ -231,7 +240,7 @@ function drawPinyinText(
   ctx.restore();
 }
 
-/** 汉字格：画格 + 按 style 绘字（solid 实心 / hollow 描红空心） */
+/** 汉字格：画格 + 按 look 绘字（solid 实心示范 / trace 描红 / hollow 空心） */
 function drawCharCell(
   ctx: CanvasRenderingContext2D,
   ch: string,
@@ -239,7 +248,7 @@ function drawCharCell(
   y: number,
   cell: number,
   settings: CopybookSettings,
-  style: "solid" | "trace" | "hollow",
+  look: { style: "solid" | "trace" | "hollow"; color: string },
 ) {
   drawCellBox(ctx, settings.gridType, x, y, cell, settings.lineColor);
   const fontPx = cell * (settings.fontScale / 100);
@@ -247,7 +256,7 @@ function drawCharCell(
   const cy = y + cell / 2 + (settings.vOffset / 100) * cell;
   ctx.save();
   setFont(ctx, settings, fontPx);
-  paintChar(ctx, ch, cx, cy, style, settings.color, settings.miaoColor, fontPx);
+  paintChar(ctx, ch, cx, cy, look.style, look.color, settings.miaoColor, fontPx);
   ctx.restore();
 }
 
@@ -329,9 +338,12 @@ function drawCharacterCopybook(
         pinyinRowH,
         settings.lineColor,
       );
-      // 每个练习列居中写一个拼音（插入空列时仅偶数列）
+      // 每个练习列居中写一个拼音（插入空列时仅偶数列）；
+      // 拼音颜色按列套用与下方汉字相同的规则（practiceCellLook）：
+      // 受首字高亮 + 高亮数量约束——前 N 个用高亮色、其余用描红色。
       for (let c = 0; c < cols; c++) {
         const slot = !settings.insertEmptyCol || c % 2 === 0;
+        const idx = settings.insertEmptyCol ? Math.floor(c / 2) : c;
         if (slot && py) {
           drawPinyinText(
             ctx,
@@ -340,6 +352,7 @@ function drawCharacterCopybook(
             y,
             pinyinRowH,
             cell - 4,
+            practiceCellLook(settings, idx).color,
           );
         }
       }
@@ -358,7 +371,7 @@ function drawCharacterCopybook(
           y,
           cell,
           settings,
-          practiceCellStyle(settings, idx),
+          practiceCellLook(settings, idx),
         );
       } else {
         drawCellBox(

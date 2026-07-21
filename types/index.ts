@@ -89,16 +89,18 @@ export interface CopybookSettings {
 
   // —— 描红 ——
   renderMode: 'solid' | 'miao' | 'hollow';
-  solidCount: number; // 每行生成多少个可练习字；是否首字实心由 highlightFirst 控制
+  solidCount: number; // 每行生成多少个可练习字；前 N 字作实心示范由 highlightFirst + highlightCount 控制
   groupSpacing: number; // 每字（拼音行 + 汉字行）块之间的间距 mm
   miaoColor: string; // 描红(空心)颜色
   lineColor: string; // 格线颜色
   color: string; // 实心字色
+  highlightColor: string; // 高亮(示范)字色：miao 模式下前 N 个示范字的字色
 
   // —— 开关 ——
   showPinyin: boolean;
   showStroke: boolean; // 显示笔顺（逐笔数据，缺失字回退字体）
-  highlightFirst: boolean; // 首字高亮（仅首个练习字作实心示范）
+  highlightFirst: boolean; // 高亮示范总开关：开启后每行前 highlightCount 个练习字作实心示范
+  highlightCount: number; // 高亮示范数量：开启 highlightFirst 时，每行前 N 字作实心示范
   insertEmptyRow: boolean; // 字间插入空行
   insertEmptyCol: boolean; // 字间插入空列
   pinyinOverrides: Record<string, number>; // 多音字手选读音：{ 字: 读音索引（charAllPinyins 的下标） }
