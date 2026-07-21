@@ -2,6 +2,7 @@
 
 import React, {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -18,6 +19,11 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { useCanvas } from "@/hooks/useCanvas";
 import { useExport } from "@/hooks/useExport";
@@ -26,7 +32,6 @@ import { usePersistentState } from "@/hooks/usePersistentState";
 import { useStrokeData } from "@/hooks/useStrokeData";
 import {
   COMMON_FONT_KEYS,
-  LOCAL_FONT_KEYS,
   fontLabel,
   fontStack,
 } from "@/lib/fonts";
@@ -85,12 +90,6 @@ const VALID_GRID_TYPES: GridType[] = [
 const VALID_RENDER_MODES: RenderMode[] = ["solid", "miao", "hollow"];
 
 const COMMON_FONT_OPTIONS = COMMON_FONT_KEYS.map((key) => ({
-  value: key,
-  label: fontLabel(key),
-  preview: fontStack(key),
-}));
-
-const LOCAL_FONT_OPTIONS = LOCAL_FONT_KEYS.map((key) => ({
   value: key,
   label: fontLabel(key),
   preview: fontStack(key),
@@ -242,16 +241,6 @@ export default function CopybookPage() {
     }),
     [settings],
   );
-  const [fontTab, setFontTab] = useState<"common" | "local">(() => {
-    const initialFont =
-      typeof settings.fontFamily === "string"
-        ? settings.fontFamily
-        : DEFAULT_SETTINGS.fontFamily;
-    return (LOCAL_FONT_KEYS as readonly string[]).includes(initialFont) ||
-      initialFont.startsWith("local:")
-      ? "local"
-      : "common";
-  });
   const [customLocalFont, setCustomLocalFont] = useState(() => {
     const initialFont =
       typeof settings.fontFamily === "string" ? settings.fontFamily : "";
@@ -269,21 +258,15 @@ export default function CopybookPage() {
     | "highlightColor"
   >(null);
 
-  // 字体面板的 tab / 自定义输入需跟随实际生效的 fontFamily。
+  // 自定义本机字体输入需跟随实际生效的 fontFamily。
   // useState 初始化只在挂载时跑一次（此时 localStorage 尚未载入），所以用 React
   // 官方“渲染期间按外部来源调整 state”的模式同步：当持久化字体变化（含挂载后载入）
-  // 时重置面板 tab 与自定义输入，避免面板显示与实际字体不一致。
+  // 时重置自定义输入，避免输入框与实际字体不一致。
   const [syncedFont, setSyncedFont] = useState(settings.fontFamily);
   if (settings.fontFamily !== syncedFont) {
     setSyncedFont(settings.fontFamily);
     const f =
       typeof settings.fontFamily === "string" ? settings.fontFamily : "";
-    setFontTab(
-      (LOCAL_FONT_KEYS as readonly string[]).includes(f) ||
-        f.startsWith("local:")
-        ? "local"
-        : "common",
-    );
     setCustomLocalFont(f.startsWith("local:") ? f.slice("local:".length) : "");
   }
 
@@ -344,7 +327,6 @@ export default function CopybookPage() {
   const applyCustomLocalFont = () => {
     const name = customLocalFont.trim();
     if (!name) return;
-    setFontTab("local");
     updateSetting("fontFamily", `local:${name}`);
   };
   const togglePanel = (
@@ -669,13 +651,8 @@ export default function CopybookPage() {
           <PanelCard>
             <FontPickerCard
               value={safeSettings.fontFamily}
-              activeTab={fontTab}
               customLocalFont={customLocalFont}
-              expanded={expandedPanel === "font"}
               commonOptions={COMMON_FONT_OPTIONS}
-              localOptions={LOCAL_FONT_OPTIONS}
-              onToggle={() => togglePanel("font")}
-              onTabChange={setFontTab}
               onValueChange={(value: string) =>
                 updateSetting("fontFamily", value)
               }
@@ -848,85 +825,137 @@ function PanelCard({ children }: { children: React.ReactNode }) {
 
 function FontPickerCard({
   value,
-  activeTab,
   customLocalFont,
-  expanded,
   commonOptions,
-  localOptions,
-  onToggle,
-  onTabChange,
   onValueChange,
   onCustomLocalFontChange,
   onApplyCustomLocalFont,
 }: {
   value: string;
-  activeTab: "common" | "local";
   customLocalFont: string;
-  expanded: boolean;
   commonOptions: { value: string; label: string; preview: string }[];
-  localOptions: { value: string; label: string; preview: string }[];
-  onToggle: () => void;
-  onTabChange: (tab: "common" | "local") => void;
   onValueChange: (value: string) => void;
   onCustomLocalFontChange: (value: string) => void;
   onApplyCustomLocalFont: () => void;
 }) {
   const currentLabel = fontLabel(value);
-  const options = activeTab === "common" ? commonOptions : localOptions;
+  const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"common" | "local">(() =>
+    value.startsWith("local:") ? "local" : "common",
+  );
+
+  // 外部字体变化（切换字帖 / 载入 localStorage）时同步面板 tab
+  useEffect(() => {
+    setTab(value.startsWith("local:") ? "local" : "common");
+  }, [value]);
+
+  // 本机字体：通过 Local Font Access API (queryLocalFonts) 动态读取用户系统已安装字体，
+  // 不写死列表。需 Chromium 内核（Chrome/Edge），首次读取会弹权限询问。
+  type LocalFont = {
+    family: string;
+    fullName: string;
+    postscriptName: string;
+    style: string;
+  };
+  const [localFamilies, setLocalFamilies] = useState<string[] | null>(null);
+  const [localStatus, setLocalStatus] = useState<
+    "idle" | "loading" | "loaded" | "unsupported" | "error"
+  >("idle");
+  const [localQuery, setLocalQuery] = useState("");
+
+  const loadLocalFonts = async () => {
+    const queryLocalFonts = (
+      window as unknown as {
+        queryLocalFonts?: () => Promise<LocalFont[]>;
+      }
+    ).queryLocalFonts;
+    if (!queryLocalFonts) {
+      setLocalStatus("unsupported");
+      return;
+    }
+    setLocalStatus("loading");
+    try {
+      const fonts = await queryLocalFonts();
+      const seen = new Set<string>();
+      const families: string[] = [];
+      for (const f of fonts) {
+        if (!seen.has(f.family)) {
+          seen.add(f.family);
+          families.push(f.family);
+        }
+      }
+      families.sort((a, b) => a.localeCompare(b));
+      setLocalFamilies(families);
+      setLocalStatus("loaded");
+    } catch {
+      setLocalStatus("error");
+    }
+  };
+
+  const filteredLocal =
+    localFamilies?.filter((f) =>
+      localQuery ? f.toLowerCase().includes(localQuery.toLowerCase()) : true,
+    ) ?? [];
 
   return (
-    <div className="space-y-3 py-1">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex h-9 w-full items-center justify-between gap-0.5 text-sm"
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="flex h-9 w-full items-center justify-between gap-0.5 text-sm outline-none"
+        >
+          <div className="flex flex-1 items-center justify-between">
+            <label className="max-w-[45%] truncate text-sm font-medium text-slate-700">
+              字体
+            </label>
+            <div className="max-w-[55%] truncate text-sm text-slate-700">
+              {currentLabel}
+            </div>
+          </div>
+          <ChevronsUpDown className="size-4 flex-none shrink-0 opacity-50" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-(--radix-popover-trigger-width) p-1.5"
       >
-        <div className="flex flex-1 items-center justify-between">
-          <label className="max-w-[45%] truncate text-sm font-medium text-slate-700">
-            字体
-          </label>
-          <div className="max-w-[55%] truncate text-sm text-slate-700">
-            {currentLabel}
-          </div>
+        <div className="bg-muted grid grid-cols-2 rounded-lg p-0.5">
+          <button
+            type="button"
+            onClick={() => setTab("common")}
+            className={`h-8 rounded-md text-sm font-medium transition-colors ${
+              tab === "common"
+                ? "bg-background text-foreground shadow-xs"
+                : "text-muted-foreground"
+            }`}
+          >
+            常用字体
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("local")}
+            className={`h-8 rounded-md text-sm font-medium transition-colors ${
+              tab === "local"
+                ? "bg-background text-foreground shadow-xs"
+                : "text-muted-foreground"
+            }`}
+          >
+            本机字体
+          </button>
         </div>
-        <ChevronsUpDown className="size-4 flex-none shrink-0 opacity-50" />
-      </button>
 
-      {expanded && (
-        <>
-          <div className="bg-muted grid grid-cols-2 rounded-lg p-0.5">
-            <button
-              type="button"
-              onClick={() => onTabChange("common")}
-              className={`h-8 rounded-md text-sm font-medium transition-colors ${
-                activeTab === "common"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground"
-              }`}
-            >
-              常用字体
-            </button>
-            <button
-              type="button"
-              onClick={() => onTabChange("local")}
-              className={`h-8 rounded-md text-sm font-medium transition-colors ${
-                activeTab === "local"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground"
-              }`}
-            >
-              本机字体
-            </button>
-          </div>
-
-          <div className="border-input bg-background max-h-44 overflow-y-auto rounded-md border shadow-xs">
-            {options.map((option) => {
+        {tab === "common" ? (
+          <div className="border-input bg-background mt-1.5 max-h-72 overflow-y-auto rounded-md border shadow-xs">
+            {commonOptions.map((option) => {
               const selected = option.value === value;
               return (
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => onValueChange(option.value)}
+                  onClick={() => {
+                    onValueChange(option.value);
+                    setOpen(false);
+                  }}
                   className={`border-border flex w-full items-center justify-between border-b px-3 py-2 text-left text-sm last:border-b-0 ${
                     selected
                       ? "bg-muted/50 text-foreground"
@@ -944,36 +973,101 @@ function FontPickerCard({
               );
             })}
           </div>
-
-          {activeTab === "local" && (
-            <div className="space-y-2">
-              <div className="flex gap-2">
+        ) : (
+          <div className="mt-1.5 space-y-1.5">
+            {localStatus === "idle" && (
+              <Button
+                type="button"
+                onClick={loadLocalFonts}
+                variant="outline"
+                className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm shadow-xs"
+              >
+                读取本机字体
+              </Button>
+            )}
+            {localStatus === "loading" && (
+              <p className="text-muted-foreground px-1 py-2 text-sm">
+                读取中…
+              </p>
+            )}
+            {(localStatus === "unsupported" || localStatus === "error") && (
+              <p className="text-muted-foreground px-1 text-xs leading-5">
+                {localStatus === "unsupported"
+                  ? "当前浏览器不支持读取本机字体（需 Chrome/Edge 等 Chromium 内核），可在下方手动输入字体名。"
+                  : "读取失败或权限被拒绝，可在下方手动输入字体名。"}
+              </p>
+            )}
+            {localStatus === "loaded" && localFamilies && (
+              <>
                 <Input
-                  value={customLocalFont}
-                  onChange={(e) => onCustomLocalFontChange(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") onApplyCustomLocalFont();
-                  }}
-                  placeholder="输入本机字体名"
+                  value={localQuery}
+                  onChange={(e) => setLocalQuery(e.target.value)}
+                  placeholder={`搜索 ${localFamilies.length} 个字体`}
                   className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
                 />
-                <Button
-                  type="button"
-                  onClick={onApplyCustomLocalFont}
-                  variant="outline"
-                  className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
-                >
-                  应用
-                </Button>
-              </div>
-              <p className="text-muted-foreground text-xs leading-5">
-                可输入系统已安装字体名，如“田英章楷书”“方正楷体”“AaKaiSong”。
-              </p>
+                <div className="border-input bg-background max-h-60 overflow-y-auto rounded-md border shadow-xs">
+                  {filteredLocal.map((family) => {
+                    const optValue = `local:${family}`;
+                    const selected = optValue === value;
+                    return (
+                      <button
+                        key={family}
+                        type="button"
+                        onClick={() => {
+                          onValueChange(optValue);
+                          setOpen(false);
+                        }}
+                        className={`border-border flex w-full items-center justify-between border-b px-3 py-2 text-left text-sm last:border-b-0 ${
+                          selected
+                            ? "bg-muted/50 text-foreground"
+                            : "hover:bg-accent text-slate-700"
+                        }`}
+                      >
+                        <span
+                          className="truncate"
+                          style={{ fontFamily: family }}
+                        >
+                          {family}
+                        </span>
+                        {selected && <Check className="h-4 w-4 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                  {filteredLocal.length === 0 && (
+                    <p className="text-muted-foreground px-3 py-2 text-sm">
+                      无匹配字体
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <Input
+                value={customLocalFont}
+                onChange={(e) => onCustomLocalFontChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") onApplyCustomLocalFont();
+                }}
+                placeholder="或手动输入本机字体名"
+                className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
+              />
+              <Button
+                type="button"
+                onClick={onApplyCustomLocalFont}
+                variant="outline"
+                className="border-input bg-background h-9 shrink-0 rounded-md border px-3 text-sm shadow-xs"
+              >
+                应用
+              </Button>
             </div>
-          )}
-        </>
-      )}
-    </div>
+            <p className="text-muted-foreground text-xs leading-5">
+              可输入系统已安装字体名，如“田英章楷书”“方正楷体”“AaKaiSong”。
+            </p>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 

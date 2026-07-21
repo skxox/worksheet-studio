@@ -114,6 +114,20 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* 交互元素：去掉移动端点击灰块（"波纹"闪烁），统一焦点——鼠标点击不显示
+     描边、仅键盘聚焦(:focus-visible)才显示环，避免原生按钮点击闪一下灰框。 */
+  button,
+  a,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  [tabindex]:not([tabindex="-1"]) {
+    -webkit-tap-highlight-color: transparent;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
   body {
     @apply bg-background text-foreground;
     font-family:
