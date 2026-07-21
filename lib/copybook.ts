@@ -392,19 +392,11 @@ function drawCharacterCopybook(
   for (const ch of chars) {
     y = drawPracticeGroup(y, ch);
     if (y > maxY) break;
-    // 插入空行：在每两个字块之间补一行空格
-    if (settings.insertEmptyRow && y + cell <= maxY) {
-      for (let c = 0; c < cols; c++) {
-        drawCellBox(
-          ctx,
-          settings.gridType,
-          m.left + c * cell,
-          y,
-          cell,
-          settings.lineColor,
-        );
-      }
-      y += cell + rowGap;
+    // 插入空行：在每两个字块之间补一个完整空组。笔顺/拼音/文字三行是一个整体，
+    // 空行也应是等高同结构的空组（drawPracticeGroup 不传 ch 即只画格不画内容），
+    // 这样开启笔顺/拼音时空白练习区与其余字组对齐、结构齐全。
+    if (settings.insertEmptyRow) {
+      y = drawPracticeGroup(y);
     }
   }
 
