@@ -6,6 +6,7 @@ import "@fontsource/long-cang/400.css";
 import "@fontsource/zhi-mang-xing/400.css";
 import "@fontsource/ma-shan-zheng/400.css";
 import { Navbar } from "@/components/layout/Navbar";
+import { MotionProvider } from "@/components/common/MotionProvider";
 
 export const metadata: Metadata = {
   title: "字帖大师 — 三合一字帖平台",
@@ -28,8 +29,10 @@ export default function RootLayout({
         />
       </head>
       <body className="flex min-h-full flex-col">
-        <Navbar />
-        <div className="flex flex-1 flex-col">{children}</div>
+        <MotionProvider>
+          <Navbar />
+          <div className="flex flex-1 flex-col">{children}</div>
+        </MotionProvider>
       </body>
     </html>
   );

@@ -1,9 +1,19 @@
-"use client";
-
 import { fontLabel, fontStack, COMMON_FONT_KEYS } from "@/lib/fonts";
 import { STROKE_PRESET } from "@/lib/copybook";
 import { PAPER_SIZES } from "@/lib/paper";
 import type { CopybookSettings, CopybookType, GridType } from "@/types";
+export {
+  COPYBOOK_TYPE_GROUPS,
+  COPYBOOK_TYPES,
+  VALID_TYPES,
+  getCopybookCapabilities,
+  getCopybookTypeMeta,
+  isCopybookType,
+  type CopybookTemplateCapabilities,
+  type CopybookTemplateGroup,
+  type CopybookTemplateMeta,
+  type FontPanelMode,
+} from "./copybook-metadata";
 
 export const GRID_TYPES: { value: GridType; label: string }[] = [
   { value: "essay", label: "作文格" },
@@ -19,44 +29,7 @@ export const GRID_TYPES: { value: GridType; label: string }[] = [
 
 export const GRID_SIZES = [8, 10, 12, 15, 20];
 
-export const COPYBOOK_TYPE_GROUPS: {
-  key: "cn" | "en" | "skill";
-  label: string;
-  options: { value: CopybookType; label: string }[];
-}[] = [
-  {
-    key: "cn",
-    label: "语文书写",
-    options: [
-      { value: "character", label: "单字临写" },
-      { value: "word", label: "词语书写" },
-      { value: "paragraph", label: "篇章誊写" },
-      { value: "stroke", label: "笔顺拆解" },
-    ],
-  },
-  {
-    key: "en",
-    label: "英文书写",
-    options: [
-      { value: "english-char", label: "字母训练" },
-      { value: "english-word", label: "单词抄写" },
-      { value: "english-para", label: "句段誊写" },
-    ],
-  },
-  {
-    key: "skill",
-    label: "专项练习",
-    options: [
-      { value: "number", label: "数字书写" },
-      { value: "pinyin", label: "拼音拼写" },
-      { value: "control", label: "控笔线练" },
-    ],
-  },
-];
-
-export const COPYBOOK_TYPES = COPYBOOK_TYPE_GROUPS.flatMap((group) => group.options);
 export type RenderMode = CopybookSettings["renderMode"];
-export const VALID_TYPES: CopybookType[] = COPYBOOK_TYPES.map((item) => item.value);
 export const VALID_GRID_TYPES: GridType[] = [
   "tian",
   "mi",
@@ -85,7 +58,7 @@ export const DEFAULT_CONTENT: Record<CopybookType, string> = {
   "english-char": "AaBbCcDd",
   "english-word": "hello world",
   "english-para": "The quick brown fox jumps over the lazy dog.",
-  number: "0123456789",
+  number: "1\n2\n3\n4\n5\n6\n7\n8\n9\n0\n\n1234567890",
   control: "",
 };
 
@@ -98,7 +71,7 @@ export const CONTENT_PLACEHOLDERS: Record<CopybookType, string> = {
   "english-char": "输入字母序列，例如：Aa Bb Cc Dd",
   "english-word": "输入英文单词，例如：hello world future design",
   "english-para": "输入英文句子或段落，支持自动换行",
-  number: "输入数字内容，例如：0123456789 或 2026 07 21",
+  number: "请输入数字，可按单行单个数字或整行数字序列输入",
   control: "",
 };
 
@@ -170,18 +143,22 @@ export function serializeStrokeContent(rows: StrokeDraftRow[]): string {
   return rows.map((row) => `${row.pattern}\t${row.example.trim()}`).join("\n");
 }
 
-export const DEFAULT_SETTINGS: CopybookSettings = {
-  type: "character",
-  content: DEFAULT_CONTENT.character,
+export function createDefaultSettings(
+  type: CopybookType = "character",
+): CopybookSettings {
+  const isNumber = type === "number";
+  return {
+    type,
+    content: DEFAULT_CONTENT[type],
   fontFamily: "kaiti",
   fontWeight: "normal",
   gridType: "tian",
   gridSize: 10,
   rowGap: 2,
   margin: { top: 36, right: 36, bottom: 36, left: 36 },
-  fontScale: 68,
+  fontScale: isNumber ? 85 : 68,
   fontSize: 28,
-  vOffset: 0,
+  vOffset: isNumber ? 20 : 0,
   renderMode: "miao",
   solidCount: 20,
   groupSpacing: 4,
@@ -198,4 +175,7 @@ export const DEFAULT_SETTINGS: CopybookSettings = {
   pinyinOverrides: {},
   lineSpacing: 12,
   paperSize: PAPER_SIZES[0],
-};
+  };
+}
+
+export const DEFAULT_SETTINGS: CopybookSettings = createDefaultSettings("character");

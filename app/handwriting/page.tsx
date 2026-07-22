@@ -166,7 +166,7 @@ export default function HandwritingPage() {
       <PreviewCanvas canvasRef={canvasRef} />
 
       <SettingsPanel>
-        <h1 className="text-xl font-bold">手写模拟器</h1>
+        <h1 className="text-display-sm">手写模拟器</h1>
 
         <ExportPanel
           onPDF={() =>

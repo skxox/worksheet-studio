@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, type ReactNode } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,36 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { fontLabel } from "@/lib/fonts";
+import { springs } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+
+/**
+ * 弹簧展开/收起容器（§3 可中断）：高度从 0↔auto，配阻尼1.0 弹簧，
+ * 中途再次切换会从当前呈现值续接。全站可折叠区块复用。
+ */
+export function Collapse({
+  open,
+  children,
+}: {
+  open: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <AnimatePresence initial={false}>
+      {open && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={springs.default}
+          className="overflow-hidden"
+        >
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 function ControlRow({
   children,
@@ -70,7 +100,7 @@ function ControlRowButton({
 
 function ControlRowLabel({ children }: { children: React.ReactNode }) {
   return (
-    <label className="truncate text-sm font-medium text-slate-700">
+    <label className="text-foreground truncate text-sm font-medium">
       {children}
     </label>
   );
@@ -85,7 +115,10 @@ function ControlRowValue({
 }) {
   return (
     <div
-      className={cn("truncate text-right text-sm text-slate-700", className)}
+      className={cn(
+        "text-muted-foreground truncate text-right text-sm",
+        className,
+      )}
     >
       {children}
     </div>
@@ -105,7 +138,7 @@ function ControlRowEnd({
 export function PanelCard({ children }: { children: React.ReactNode }) {
   const items = React.Children.toArray(children).filter(Boolean);
   return (
-    <div className="bg-background border-input flex flex-col rounded-md border px-3 py-0.5 shadow-xs">
+    <div className="bg-card flex flex-col rounded-xl border border-border/50 px-3 py-0.5 shadow-1">
       {items.map((child, index) => (
         <React.Fragment key={index}>
           {index > 0 && (
@@ -113,7 +146,7 @@ export function PanelCard({ children }: { children: React.ReactNode }) {
               data-orientation="horizontal"
               role="none"
               data-slot="separator-root"
-              className="bg-border shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full"
+              className="bg-border/50 shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full"
             />
           )}
           {child}
@@ -216,7 +249,7 @@ export function FontPickerCard({
             onClick={() => setTab("common")}
             className={`h-8 rounded-md text-sm font-medium transition-colors ${
               tab === "common"
-                ? "bg-background text-foreground shadow-xs"
+                ? "bg-background text-foreground shadow-1"
                 : "text-muted-foreground"
             }`}
           >
@@ -227,7 +260,7 @@ export function FontPickerCard({
             onClick={() => setTab("local")}
             className={`h-8 rounded-md text-sm font-medium transition-colors ${
               tab === "local"
-                ? "bg-background text-foreground shadow-xs"
+                ? "bg-background text-foreground shadow-1"
                 : "text-muted-foreground"
             }`}
           >
@@ -236,7 +269,7 @@ export function FontPickerCard({
         </div>
 
         {tab === "common" ? (
-          <div className="border-input bg-background mt-1.5 max-h-72 overflow-y-auto rounded-md border shadow-xs">
+          <div className="border-input bg-background mt-1.5 max-h-72 overflow-y-auto rounded-md border shadow-1">
             {commonOptions.map((option) => {
               const selected = option.value === value;
               return (
@@ -250,7 +283,7 @@ export function FontPickerCard({
                   className={`border-border flex w-full items-center justify-between border-b px-3 py-2 text-left text-sm last:border-b-0 ${
                     selected
                       ? "bg-muted/50 text-foreground"
-                      : "hover:bg-accent text-slate-700"
+                      : "hover:bg-accent text-foreground"
                   }`}
                 >
                   <span
@@ -271,7 +304,7 @@ export function FontPickerCard({
                 type="button"
                 onClick={loadLocalFonts}
                 variant="outline"
-                className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm shadow-xs"
+                className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm shadow-1"
               >
                 读取本机字体
               </Button>
@@ -292,9 +325,9 @@ export function FontPickerCard({
                   value={localQuery}
                   onChange={(e) => setLocalQuery(e.target.value)}
                   placeholder={`搜索 ${localFamilies.length} 个字体`}
-                  className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
+                  className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-1"
                 />
-                <div className="border-input bg-background max-h-60 overflow-y-auto rounded-md border shadow-xs">
+                <div className="border-input bg-background max-h-60 overflow-y-auto rounded-md border shadow-1">
                   {filteredLocal.map((family) => {
                     const optValue = `local:${family}`;
                     const selected = optValue === value;
@@ -309,7 +342,7 @@ export function FontPickerCard({
                         className={`border-border flex w-full items-center justify-between border-b px-3 py-2 text-left text-sm last:border-b-0 ${
                           selected
                             ? "bg-muted/50 text-foreground"
-                            : "hover:bg-accent text-slate-700"
+                            : "hover:bg-accent text-foreground"
                         }`}
                       >
                         <span
@@ -339,13 +372,13 @@ export function FontPickerCard({
                   if (e.key === "Enter") onApplyCustomLocalFont();
                 }}
                 placeholder="或手动输入本机字体名"
-                className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
+                className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-1"
               />
               <Button
                 type="button"
                 onClick={onApplyCustomLocalFont}
                 variant="outline"
-                className="border-input bg-background h-9 shrink-0 rounded-md border px-3 text-sm shadow-xs"
+                className="border-input bg-background h-9 shrink-0 rounded-md border px-3 text-sm shadow-1"
               >
                 应用
               </Button>
@@ -400,7 +433,7 @@ export function CompactSwitchRow({
         <Switch
           checked={checked}
           onCheckedChange={onCheckedChange}
-          className="h-[1.15rem] w-8 shadow-xs"
+          className="h-[1.15rem] w-8 shadow-1"
         />
       </ControlRowEnd>
     </ControlRow>
@@ -502,10 +535,13 @@ export function CompactColorRow({
       <ControlRowButton type="button" onClick={onToggle}>
         <ControlRowLabel>{label}</ControlRowLabel>
         <ControlRowEnd>
-          <span className="size-5 rounded" style={{ backgroundColor: value }} />
+          <span
+            className="size-5 rounded ring-1 ring-black/5"
+            style={{ backgroundColor: value }}
+          />
         </ControlRowEnd>
       </ControlRowButton>
-      {expanded && (
+      <Collapse open={expanded}>
         <div className="flex items-center gap-2 pb-2">
           <input
             type="color"
@@ -516,10 +552,10 @@ export function CompactColorRow({
           <Input
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
+            className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-1"
           />
         </div>
-      )}
+      </Collapse>
     </div>
   );
 }

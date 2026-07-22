@@ -408,6 +408,172 @@ function drawWordCopybook(
   }
 }
 
+function parseNumberRows(content: string): string[] {
+  const lines = content.split("\n");
+  const rows: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      rows.push("");
+      continue;
+    }
+
+    const tokens = trimmed.split(/\s+/).filter(Boolean);
+    if (tokens.length > 1) {
+      rows.push(...tokens);
+      continue;
+    }
+
+    if (/^[0-9/]+$/.test(trimmed) && !trimmed.includes("/")) {
+      rows.push(...Array.from(trimmed));
+      continue;
+    }
+
+    rows.push(trimmed);
+  }
+
+  return rows.length > 0 ? rows : [""];
+}
+
+function drawNumberGridRow(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  rowHeight: number,
+  colWidth: number,
+  color: string,
+) {
+  const cols = Math.max(1, Math.floor(width / colWidth));
+  const gridWidth = cols * colWidth;
+  const midY = y + rowHeight / 2;
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + gridWidth, y);
+  ctx.moveTo(x, y + rowHeight);
+  ctx.lineTo(x + gridWidth, y + rowHeight);
+  ctx.moveTo(x, y);
+  ctx.lineTo(x, y + rowHeight);
+  ctx.moveTo(x + gridWidth, y);
+  ctx.lineTo(x + gridWidth, y + rowHeight);
+  ctx.stroke();
+
+  ctx.strokeStyle = "#b8c2d0";
+  ctx.lineWidth = 0.8;
+  ctx.setLineDash([2.5, 2]);
+  for (let c = 1; c < cols; c++) {
+    const cx = x + c * colWidth;
+    ctx.beginPath();
+    ctx.moveTo(cx, y);
+    ctx.lineTo(cx, y + rowHeight);
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.moveTo(x, midY);
+  ctx.lineTo(x + gridWidth, midY);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawNumberCopybook(
+  ctx: CanvasRenderingContext2D,
+  settings: CopybookSettings,
+  m: MarginPx,
+  contentWidth: number,
+  contentHeight: number,
+) {
+  const rowHeight = mmToPx(settings.gridSize);
+  const colWidth = rowHeight * 0.52;
+  const cols = Math.max(1, Math.floor(contentWidth / colWidth));
+  const rowGap = mmToPx(settings.rowGap);
+  const maxY = m.top + contentHeight;
+  const rows = parseNumberRows(settings.content);
+  const practiceLimit = Math.max(0, Math.min(cols, settings.solidCount));
+
+  function buildPracticeSequence(token: string): string[] {
+    const raw = token.replace(/\s+/g, "");
+    if (!raw) return [];
+    if (raw.length === 1) {
+      return Array.from({ length: practiceLimit }, () => raw);
+    }
+
+    const sequence = Array.from(raw);
+    const result: string[] = [];
+    while (result.filter((item) => item !== "/").length < practiceLimit) {
+      result.push(...sequence);
+      if (result.filter((item) => item !== "/").length < practiceLimit) {
+        result.push("/");
+      }
+    }
+    return result.slice(0, Math.min(cols, result.length));
+  }
+
+  function drawNumberLine(y: number, token?: string): number {
+    if (y + rowHeight > maxY) return maxY + 1;
+    drawNumberGridRow(
+      ctx,
+      m.left,
+      y,
+      contentWidth,
+      rowHeight,
+      colWidth,
+      settings.lineColor,
+    );
+
+    if (token) {
+      const sequence = buildPracticeSequence(token);
+      if (sequence.length > 0) {
+        let renderedCount = 0;
+        for (let c = 0; c < cols; c++) {
+          if (settings.insertEmptyCol && c % 2 === 1) continue;
+          const seqIndex = settings.insertEmptyCol ? Math.floor(c / 2) : c;
+          const ch = sequence[seqIndex] ?? "";
+          if (!ch) continue;
+          const look = practiceCellLook(settings, renderedCount);
+          const fontPx = Math.min(
+            rowHeight * (settings.fontScale / 100),
+            colWidth * 1.35,
+          );
+          ctx.save();
+          setFont(ctx, settings, fontPx);
+          paintChar(
+            ctx,
+            ch,
+            m.left + c * colWidth + colWidth / 2,
+            y + rowHeight / 2 + (settings.vOffset / 100) * rowHeight,
+            look.style,
+            look.color,
+            settings.miaoColor,
+            fontPx,
+          );
+          ctx.restore();
+          if (ch !== "/") renderedCount += 1;
+        }
+      }
+    }
+
+    return y + rowHeight + rowGap;
+  }
+
+  let y = m.top;
+  for (const row of rows) {
+    y = drawNumberLine(y, row);
+    if (y > maxY) break;
+    if (settings.insertEmptyRow) y = drawNumberLine(y);
+  }
+
+  while (y + rowHeight <= maxY) {
+    y = drawNumberLine(y);
+  }
+}
+
 const STROKE_PATTERN_GLYPHS: Record<string, string> = {
   "right-dot": "丶",
   "left-dot": "丶",
@@ -981,6 +1147,9 @@ export function drawCopybook(
       break;
     case "word":
       drawWordCopybook(ctx, settings, m, contentWidth, contentHeight);
+      break;
+    case "number":
+      drawNumberCopybook(ctx, settings, m, contentWidth, contentHeight);
       break;
     case "stroke":
       drawStrokeCopybook(ctx, settings, m, contentWidth, contentHeight);

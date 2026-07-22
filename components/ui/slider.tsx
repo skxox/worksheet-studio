@@ -22,10 +22,10 @@ const Slider = React.forwardRef<
     {props.value?.map((_, i) => (
       <SliderPrimitive.Thumb
         key={i}
-        className="border-primary/50 bg-background focus-visible:ring-ring block h-4 w-4 rounded-full border shadow transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+        className="border-primary/50 bg-background focus-visible:ring-ring block h-4 w-4 rounded-full border shadow-1 transition-[color,transform,box-shadow] duration-150 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-110 focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
       />
     )) ?? (
-      <SliderPrimitive.Thumb className="border-primary/50 bg-background focus-visible:ring-ring block h-4 w-4 rounded-full border shadow transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50" />
+      <SliderPrimitive.Thumb className="border-primary/50 bg-background focus-visible:ring-ring block h-4 w-4 rounded-full border shadow-1 transition-[color,transform,box-shadow] duration-150 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-110 focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50" />
     )}
   </SliderPrimitive.Root>
 ));

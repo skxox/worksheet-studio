@@ -12,6 +12,7 @@ interface PreviewCanvasProps {
 /**
  * 通用预览容器：canvas 的后缓冲保持全分辨率（导出清晰），
  * 显示层用 maxHeight/maxWidth 等比缩放到视口内，可滚动。
+ * 纸张以分层柔和阴影「浮」在画布上。
  */
 export function PreviewCanvas({ canvasRef, className }: PreviewCanvasProps) {
   return (
@@ -23,13 +24,12 @@ export function PreviewCanvas({ canvasRef, className }: PreviewCanvasProps) {
     >
       <canvas
         ref={canvasRef}
-        className="block rounded-sm bg-white ring-1 ring-black/5"
+        className="block rounded-sm bg-white shadow-paper ring-1 ring-black/5"
         style={{
           maxHeight: "calc(100vh - 7rem)",
           maxWidth: "100%",
           width: "auto",
           height: "auto",
-          boxShadow: "0 12px 32px rgba(0, 0, 0, 0.12)",
         }}
       />
     </div>

@@ -140,7 +140,7 @@ export default function PaperPage() {
 
       <SettingsPanel>
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">纸张工厂</h1>
+          <h1 className="text-display-sm">纸张工厂</h1>
           <Button onClick={handlePrint} variant="ghost" size="sm">
             <Printer className="mr-1 h-4 w-4" />
             打印
