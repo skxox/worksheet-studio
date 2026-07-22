@@ -2,43 +2,52 @@
 
 import React, {
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
 } from "react";
-import { Check, ChevronsUpDown, Download, Printer } from "lucide-react";
+import { Check, Download, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Textarea } from "@/components/ui/textarea";
 import { useCanvas } from "@/hooks/useCanvas";
 import { useExport } from "@/hooks/useExport";
 import { useFontLoader } from "@/hooks/useFontLoader";
 import { usePersistentState } from "@/hooks/usePersistentState";
 import { useStrokeData } from "@/hooks/useStrokeData";
-import {
-  COMMON_FONT_KEYS,
-  fontLabel,
-  fontStack,
-} from "@/lib/fonts";
-import { drawCopybook, STROKE_PRESET } from "@/lib/copybook";
+import { drawCopybook } from "@/lib/copybook";
 import type { PinyinToggleMarker } from "@/lib/copybook";
 import { charAllPinyins } from "@/lib/pinyin";
 import { getCanvasSize, PAPER_SIZES } from "@/lib/paper";
+import { CopybookContentModal } from "./_components/copybook-content-modal";
+import {
+  CompactColorRow,
+  CompactSelectRow,
+  CompactSliderRow,
+  CompactSwitchRow,
+  ExpandableTriggerRow,
+  FontPickerCard,
+  PanelCard,
+} from "./_components/copybook-controls";
+import { CopybookLeftNav } from "./_components/copybook-left-nav";
+import {
+  COMMON_FONT_OPTIONS,
+  CONTENT_PLACEHOLDERS,
+  COPYBOOK_TYPE_GROUPS,
+  COPYBOOK_TYPES,
+  DEFAULT_CONTENT,
+  DEFAULT_SETTINGS,
+  GRID_SIZES,
+  GRID_TYPES,
+  parseStrokeContent,
+  serializeStrokeContent,
+  STROKE_PATTERN_OPTIONS,
+  VALID_GRID_TYPES,
+  VALID_RENDER_MODES,
+  VALID_TYPES,
+  type RenderMode,
+  type StrokeDraftRow,
+} from "./copybook-config";
 import type {
   CopybookSettings,
   CopybookType,
@@ -46,97 +55,6 @@ import type {
   Margin,
   PaperSize,
 } from "@/types";
-
-const GRID_TYPES: { value: GridType; label: string }[] = [
-  { value: "essay", label: "作文格" },
-  { value: "tian", label: "田字格" },
-  { value: "mi", label: "米字格" },
-  { value: "huigong", label: "回宫格" },
-  { value: "huitian", label: "回田格" },
-  { value: "huimi", label: "回米格" },
-  { value: "huijiu", label: "回九格" },
-  { value: "jiugong", label: "九宫格" },
-  { value: "yuanmi", label: "圆米格" },
-];
-
-const GRID_SIZES = [8, 10, 12, 15, 20];
-
-const COPYBOOK_TYPES: { value: CopybookType; label: string }[] = [
-  { value: "character", label: "汉字" },
-  { value: "word", label: "词组" },
-  { value: "paragraph", label: "段落" },
-  { value: "pinyin", label: "拼音" },
-  { value: "stroke", label: "笔画" },
-  { value: "english-char", label: "英文字母" },
-  { value: "english-word", label: "英文单词" },
-  { value: "english-para", label: "英文段落" },
-  { value: "number", label: "数字" },
-  { value: "control", label: "控笔" },
-];
-
-type RenderMode = CopybookSettings["renderMode"];
-const VALID_TYPES: CopybookType[] = COPYBOOK_TYPES.map((item) => item.value);
-const VALID_GRID_TYPES: GridType[] = [
-  "tian",
-  "mi",
-  "huigong",
-  "jiugong",
-  "essay",
-  "huitian",
-  "huimi",
-  "huijiu",
-  "yuanmi",
-];
-const VALID_RENDER_MODES: RenderMode[] = ["solid", "miao", "hollow"];
-
-const COMMON_FONT_OPTIONS = COMMON_FONT_KEYS.map((key) => ({
-  value: key,
-  label: fontLabel(key),
-  preview: fontStack(key),
-}));
-
-const DEFAULT_CONTENT: Record<CopybookType, string> = {
-  character: "你好世界",
-  word: "春暖花开 阳光明媚",
-  paragraph: "床前明月光，疑是地上霜。\n举头望明月，低头思故乡。",
-  pinyin: "春夏秋冬",
-  stroke: STROKE_PRESET,
-  "english-char": "AaBbCcDd",
-  "english-word": "hello world",
-  "english-para": "The quick brown fox jumps over the lazy dog.",
-  number: "0123456789",
-  control: "",
-};
-
-const DEFAULT_SETTINGS: CopybookSettings = {
-  type: "character",
-  content: DEFAULT_CONTENT.character,
-  fontFamily: "kaiti",
-  fontWeight: "normal",
-  gridType: "tian",
-  gridSize: 10,
-  rowGap: 2,
-  margin: { top: 36, right: 36, bottom: 36, left: 36 },
-  fontScale: 68,
-  fontSize: 28,
-  vOffset: 0,
-  renderMode: "miao",
-  solidCount: 20,
-  groupSpacing: 4,
-  miaoColor: "#94a3b8",
-  lineColor: "#98a5b9",
-  color: "#1f2937",
-  highlightColor: "#1f2937",
-  showPinyin: false,
-  showStroke: false,
-  highlightFirst: true,
-  highlightCount: 1,
-  insertEmptyRow: false,
-  insertEmptyCol: false,
-  pinyinOverrides: {},
-  lineSpacing: 12,
-  paperSize: PAPER_SIZES[0],
-};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -395,22 +313,79 @@ export default function CopybookPage() {
   };
 
   const t = safeSettings.type;
-  const isGridMode = [
-    "character",
-    "word",
-    "number",
-    "stroke",
-    "pinyin",
-  ].includes(t);
   const isEnglishGridMode = t === "english-char" || t === "english-word";
-  const isLineMode = t === "paragraph" || t === "english-para";
   // 拼音类型在绘制端强制显示拼音，开关对它无效，故不展示，避免误导。
-  const showPinyinToggle = ["character", "word"].includes(t);
   const marginSummary = `${safeSettings.margin.top}, ${safeSettings.margin.right}, ${safeSettings.margin.bottom}, ${safeSettings.margin.left}`;
   const pinyinReadings = pinyinMenu ? charAllPinyins(pinyinMenu.char) : [];
   const pinyinCurrent = pinyinMenu
     ? (safeSettings.pinyinOverrides[pinyinMenu.char] ?? 0)
     : 0;
+  const activeLabel =
+    COPYBOOK_TYPES.find((item) => item.value === t)?.label ?? t;
+
+  const [contentModalOpen, setContentModalOpen] = useState(false);
+  const [draftContent, setDraftContent] = useState("");
+  const [strokeRows, setStrokeRows] = useState<StrokeDraftRow[]>(() =>
+    parseStrokeContent(DEFAULT_CONTENT.stroke),
+  );
+  const openContentEditor = () => {
+    if (t === "stroke") {
+      setStrokeRows(parseStrokeContent(safeSettings.content));
+    } else {
+      setDraftContent(safeSettings.content);
+    }
+    setContentModalOpen(true);
+  };
+
+  const isStrokeMode = t === "stroke";
+  const showPinyinToggle = ["character", "word"].includes(t);
+  const showGridControls = ["character", "word", "number", "pinyin"].includes(
+    t,
+  );
+  const showLineControls = ["paragraph", "english-para"].includes(t);
+  const showStrokeControls = t === "stroke";
+  const showRenderModePanel = [
+    "character",
+    "word",
+    "number",
+    "pinyin",
+    "stroke",
+    "english-char",
+    "english-word",
+  ].includes(t);
+  const showHighlightToggle = [
+    "character",
+    "word",
+    "stroke",
+    "english-char",
+    "english-word",
+  ].includes(t);
+  const showInsertEmptyRow = [
+    "character",
+    "word",
+    "paragraph",
+    "english-word",
+  ].includes(t);
+  const showInsertEmptyCol = ["character", "word"].includes(t);
+  const showStrokeSwitch = t === "character";
+  const showSwitchPanel =
+    showStrokeSwitch ||
+    showPinyinToggle ||
+    showHighlightToggle ||
+    showInsertEmptyRow ||
+    showInsertEmptyCol;
+  const contentPreview = isStrokeMode
+    ? strokeRows
+        .map((row) => {
+          const patternLabel =
+            STROKE_PATTERN_OPTIONS.find((item) => item.value === row.pattern)
+              ?.label ?? row.pattern;
+          return row.example ? `${patternLabel} ${row.example}` : patternLabel;
+        })
+        .filter(Boolean)
+        .slice(0, 3)
+        .join(" / ")
+    : safeSettings.content;
 
   return (
     <main
@@ -418,9 +393,15 @@ export default function CopybookPage() {
       style={{ minHeight: "calc(-122px + 100vh)" }}
     >
       <div
-        className="print-out container mx-auto flex w-full max-w-[var(--content-width)] justify-center gap-4 pt-5"
+        className="print-out container mx-auto flex w-full max-w-(--content-width) gap-4 pt-5"
         style={{ "--content-width": "1090px" } as CSSProperties}
       >
+        <CopybookLeftNav
+          groups={COPYBOOK_TYPE_GROUPS}
+          currentType={t}
+          onChange={changeType}
+        />
+
         <section className="relative">
           <div
             className="relative"
@@ -491,7 +472,7 @@ export default function CopybookPage() {
           </div>
         </section>
 
-        <aside className="sticky top-16 flex max-h-[calc(100vh-80px)] min-w-50 flex-1 scrollbar-thin flex-col gap-3 overflow-y-auto pb-4">
+        <aside className="sticky top-16 flex max-h-[calc(100vh-80px)] w-58 min-w-50 shrink-0 scrollbar-thin flex-col gap-2 overflow-y-auto pb-4">
           <div className="flex gap-2">
             <Button
               onClick={() =>
@@ -514,42 +495,55 @@ export default function CopybookPage() {
             </Button>
           </div>
 
-          <PanelCard>
-            <CompactSelectRow
-              label="字帖类型"
-              value={t}
-              options={COPYBOOK_TYPES}
-              onValueChange={(value) => changeType(value as CopybookType)}
-            />
-          </PanelCard>
-
           {t !== "control" && (
-            <Textarea
-              value={safeSettings.content}
-              onChange={(e) => updateSetting("content", e.target.value)}
-              rows={3}
-              placeholder="输入要练习的文字..."
-              className="border-input bg-background placeholder:text-muted-foreground h-24 min-h-16 w-full resize-none rounded-md border px-3 py-2 text-base shadow-xs transition-[color,box-shadow] md:text-sm"
-            />
+            <PanelCard>
+              <div className="flex h-8 items-center justify-between gap-2 pt-1">
+                <div className="text-sm font-semibold text-slate-900">内容</div>
+                <div className="max-w-24 truncate rounded-sm bg-slate-100 px-1.5 py-0.5 text-[10px] leading-none text-slate-500">
+                  {activeLabel}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={openContentEditor}
+                className="border-input bg-background mt-2 mb-1 flex w-full flex-col gap-1 rounded-md border px-3 py-2 text-left shadow-xs transition-colors hover:bg-slate-50"
+              >
+                <div className="text-xs text-slate-500">点击编辑</div>
+                <div className="line-clamp-2 text-sm text-slate-700">
+                  {(isStrokeMode
+                    ? contentPreview
+                    : safeSettings.content
+                  )?.trim().length
+                    ? isStrokeMode
+                      ? contentPreview
+                      : safeSettings.content
+                    : CONTENT_PLACEHOLDERS[t]}
+                </div>
+              </button>
+            </PanelCard>
           )}
 
-          <PanelCard>
-            {isGridMode && (
-              <CompactSwitchRow
-                label="显示笔顺"
-                checked={safeSettings.showStroke}
-                onCheckedChange={(value) => updateSetting("showStroke", value)}
-              />
-            )}
-            {showPinyinToggle && (
-              <CompactSwitchRow
-                label="显示拼音"
-                checked={safeSettings.showPinyin}
-                onCheckedChange={(value) => updateSetting("showPinyin", value)}
-              />
-            )}
-            {isGridMode && (
-              <>
+          {showSwitchPanel && (
+            <PanelCard>
+              {showStrokeSwitch && (
+                <CompactSwitchRow
+                  label="显示笔顺"
+                  checked={safeSettings.showStroke}
+                  onCheckedChange={(value) =>
+                    updateSetting("showStroke", value)
+                  }
+                />
+              )}
+              {showPinyinToggle && (
+                <CompactSwitchRow
+                  label="显示拼音"
+                  checked={safeSettings.showPinyin}
+                  onCheckedChange={(value) =>
+                    updateSetting("showPinyin", value)
+                  }
+                />
+              )}
+              {showHighlightToggle && (
                 <CompactSwitchRow
                   label="首字高亮"
                   checked={safeSettings.highlightFirst}
@@ -557,6 +551,8 @@ export default function CopybookPage() {
                     updateSetting("highlightFirst", value)
                   }
                 />
+              )}
+              {showInsertEmptyRow && (
                 <CompactSwitchRow
                   label="插入空行"
                   checked={safeSettings.insertEmptyRow}
@@ -564,6 +560,8 @@ export default function CopybookPage() {
                     updateSetting("insertEmptyRow", value)
                   }
                 />
+              )}
+              {showInsertEmptyCol && (
                 <CompactSwitchRow
                   label="插入空列"
                   checked={safeSettings.insertEmptyCol}
@@ -571,11 +569,11 @@ export default function CopybookPage() {
                     updateSetting("insertEmptyCol", value)
                   }
                 />
-              </>
-            )}
-          </PanelCard>
+              )}
+            </PanelCard>
+          )}
 
-          {isGridMode && (
+          {showGridControls && (
             <PanelCard>
               <CompactSelectRow
                 label="方格类型"
@@ -596,6 +594,85 @@ export default function CopybookPage() {
                 max={GRID_SIZES[GRID_SIZES.length - 1]}
                 step={1}
                 onChange={(value) => updateSetting("gridSize", value)}
+              />
+              <CompactSliderRow
+                label="行间距"
+                value={safeSettings.rowGap}
+                unit="mm"
+                min={0}
+                max={10}
+                step={0.5}
+                onChange={(value) => updateSetting("rowGap", value)}
+              />
+              <ExpandableTriggerRow
+                label="页边距"
+                value={marginSummary}
+                expanded={expandedPanel === "margin"}
+                onToggle={() => togglePanel("margin")}
+              />
+              {expandedPanel === "margin" && (
+                <div className="grid gap-2 py-2">
+                  <div className="grid grid-cols-4 gap-2">
+                    {(["top", "right", "bottom", "left"] as const).map(
+                      (key) => (
+                        <div key={key} className="space-y-1">
+                          <div className="text-muted-foreground text-center text-[11px]">
+                            {
+                              {
+                                top: "上",
+                                right: "右",
+                                bottom: "下",
+                                left: "左",
+                              }[key]
+                            }
+                          </div>
+                          <Input
+                            type="number"
+                            min={10}
+                            max={100}
+                            step={1}
+                            value={safeSettings.margin[key]}
+                            onChange={(e) =>
+                              updateMargin(key, Number(e.target.value))
+                            }
+                            className="border-input bg-background h-9 rounded-md border px-2 text-center text-xs shadow-xs"
+                          />
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </div>
+              )}
+            </PanelCard>
+          )}
+
+          {showLineControls && (
+            <PanelCard>
+              <CompactSelectRow
+                label="方格类型"
+                value={safeSettings.gridType}
+                options={[{ value: "essay", label: "横线格" }]}
+                onValueChange={(value) =>
+                  updateSetting("gridType", value as GridType)
+                }
+              />
+              <CompactSliderRow
+                label="方格大小"
+                value={safeSettings.gridSize}
+                unit="mm"
+                min={8}
+                max={20}
+                step={1}
+                onChange={(value) => updateSetting("gridSize", value)}
+              />
+              <CompactSliderRow
+                label="字间距"
+                value={safeSettings.lineSpacing}
+                unit="px"
+                min={0}
+                max={24}
+                step={1}
+                onChange={(value) => updateSetting("lineSpacing", value)}
               />
               <CompactSliderRow
                 label="行间距"
@@ -673,7 +750,7 @@ export default function CopybookPage() {
                 )
               }
             />
-            {isGridMode ? (
+            {showGridControls || showStrokeControls ? (
               <>
                 <CompactSliderRow
                   label="字体大小"
@@ -694,7 +771,7 @@ export default function CopybookPage() {
                   onChange={(value) => updateSetting("vOffset", value)}
                 />
               </>
-            ) : isLineMode ? (
+            ) : showLineControls ? (
               <>
                 <CompactSliderRow
                   label="字号"
@@ -728,7 +805,7 @@ export default function CopybookPage() {
             ) : null}
           </PanelCard>
 
-          {isGridMode && (
+          {showRenderModePanel && (
             <PanelCard>
               <CompactSelectRow
                 label="字色模式"
@@ -751,7 +828,7 @@ export default function CopybookPage() {
                 step={1}
                 onChange={(value) => updateSetting("solidCount", value)}
               />
-              {safeSettings.renderMode === "miao" && (
+              {safeSettings.renderMode === "miao" && showHighlightToggle && (
                 <CompactSliderRow
                   label="高亮数量"
                   value={safeSettings.highlightCount}
@@ -798,453 +875,25 @@ export default function CopybookPage() {
           )}
         </aside>
       </div>
+
+      <CopybookContentModal
+        open={contentModalOpen}
+        title={activeLabel}
+        type={t}
+        placeholder={CONTENT_PLACEHOLDERS[t]}
+        draftContent={draftContent}
+        strokeRows={strokeRows}
+        onClose={() => setContentModalOpen(false)}
+        onDraftChange={setDraftContent}
+        onStrokeRowsChange={setStrokeRows}
+        onSave={() => {
+          updateSetting(
+            "content",
+            isStrokeMode ? serializeStrokeContent(strokeRows) : draftContent,
+          );
+          setContentModalOpen(false);
+        }}
+      />
     </main>
-  );
-}
-
-function PanelCard({ children }: { children: React.ReactNode }) {
-  const items = React.Children.toArray(children).filter(Boolean);
-  return (
-    <div className="bg-background border-input flex flex-col rounded-md border px-3 py-[2px] shadow-xs">
-      {items.map((child, index) => (
-        <React.Fragment key={index}>
-          {index > 0 && (
-            <div
-              data-orientation="horizontal"
-              role="none"
-              data-slot="separator-root"
-              className="bg-border shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full"
-            />
-          )}
-          {child}
-        </React.Fragment>
-      ))}
-    </div>
-  );
-}
-
-function FontPickerCard({
-  value,
-  customLocalFont,
-  commonOptions,
-  onValueChange,
-  onCustomLocalFontChange,
-  onApplyCustomLocalFont,
-}: {
-  value: string;
-  customLocalFont: string;
-  commonOptions: { value: string; label: string; preview: string }[];
-  onValueChange: (value: string) => void;
-  onCustomLocalFontChange: (value: string) => void;
-  onApplyCustomLocalFont: () => void;
-}) {
-  const currentLabel = fontLabel(value);
-  const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"common" | "local">(() =>
-    value.startsWith("local:") ? "local" : "common",
-  );
-
-  // 外部字体变化（切换字帖 / 载入 localStorage）时同步面板 tab
-  useEffect(() => {
-    setTab(value.startsWith("local:") ? "local" : "common");
-  }, [value]);
-
-  // 本机字体：通过 Local Font Access API (queryLocalFonts) 动态读取用户系统已安装字体，
-  // 不写死列表。需 Chromium 内核（Chrome/Edge），首次读取会弹权限询问。
-  type LocalFont = {
-    family: string;
-    fullName: string;
-    postscriptName: string;
-    style: string;
-  };
-  const [localFamilies, setLocalFamilies] = useState<string[] | null>(null);
-  const [localStatus, setLocalStatus] = useState<
-    "idle" | "loading" | "loaded" | "unsupported" | "error"
-  >("idle");
-  const [localQuery, setLocalQuery] = useState("");
-
-  const loadLocalFonts = async () => {
-    const queryLocalFonts = (
-      window as unknown as {
-        queryLocalFonts?: () => Promise<LocalFont[]>;
-      }
-    ).queryLocalFonts;
-    if (!queryLocalFonts) {
-      setLocalStatus("unsupported");
-      return;
-    }
-    setLocalStatus("loading");
-    try {
-      const fonts = await queryLocalFonts();
-      const seen = new Set<string>();
-      const families: string[] = [];
-      for (const f of fonts) {
-        if (!seen.has(f.family)) {
-          seen.add(f.family);
-          families.push(f.family);
-        }
-      }
-      families.sort((a, b) => a.localeCompare(b));
-      setLocalFamilies(families);
-      setLocalStatus("loaded");
-    } catch {
-      setLocalStatus("error");
-    }
-  };
-
-  const filteredLocal =
-    localFamilies?.filter((f) =>
-      localQuery ? f.toLowerCase().includes(localQuery.toLowerCase()) : true,
-    ) ?? [];
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="flex h-9 w-full items-center justify-between gap-0.5 text-sm outline-none"
-        >
-          <div className="flex flex-1 items-center justify-between">
-            <label className="max-w-[45%] truncate text-sm font-medium text-slate-700">
-              字体
-            </label>
-            <div className="max-w-[55%] truncate text-sm text-slate-700">
-              {currentLabel}
-            </div>
-          </div>
-          <ChevronsUpDown className="size-4 flex-none shrink-0 opacity-50" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="w-(--radix-popover-trigger-width) p-1.5"
-      >
-        <div className="bg-muted grid grid-cols-2 rounded-lg p-0.5">
-          <button
-            type="button"
-            onClick={() => setTab("common")}
-            className={`h-8 rounded-md text-sm font-medium transition-colors ${
-              tab === "common"
-                ? "bg-background text-foreground shadow-xs"
-                : "text-muted-foreground"
-            }`}
-          >
-            常用字体
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("local")}
-            className={`h-8 rounded-md text-sm font-medium transition-colors ${
-              tab === "local"
-                ? "bg-background text-foreground shadow-xs"
-                : "text-muted-foreground"
-            }`}
-          >
-            本机字体
-          </button>
-        </div>
-
-        {tab === "common" ? (
-          <div className="border-input bg-background mt-1.5 max-h-72 overflow-y-auto rounded-md border shadow-xs">
-            {commonOptions.map((option) => {
-              const selected = option.value === value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    onValueChange(option.value);
-                    setOpen(false);
-                  }}
-                  className={`border-border flex w-full items-center justify-between border-b px-3 py-2 text-left text-sm last:border-b-0 ${
-                    selected
-                      ? "bg-muted/50 text-foreground"
-                      : "hover:bg-accent text-slate-700"
-                  }`}
-                >
-                  <span
-                    className="truncate"
-                    style={{ fontFamily: option.preview }}
-                  >
-                    {option.label}
-                  </span>
-                  {selected && <Check className="h-4 w-4 shrink-0" />}
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="mt-1.5 space-y-1.5">
-            {localStatus === "idle" && (
-              <Button
-                type="button"
-                onClick={loadLocalFonts}
-                variant="outline"
-                className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm shadow-xs"
-              >
-                读取本机字体
-              </Button>
-            )}
-            {localStatus === "loading" && (
-              <p className="text-muted-foreground px-1 py-2 text-sm">
-                读取中…
-              </p>
-            )}
-            {(localStatus === "unsupported" || localStatus === "error") && (
-              <p className="text-muted-foreground px-1 text-xs leading-5">
-                {localStatus === "unsupported"
-                  ? "当前浏览器不支持读取本机字体（需 Chrome/Edge 等 Chromium 内核），可在下方手动输入字体名。"
-                  : "读取失败或权限被拒绝，可在下方手动输入字体名。"}
-              </p>
-            )}
-            {localStatus === "loaded" && localFamilies && (
-              <>
-                <Input
-                  value={localQuery}
-                  onChange={(e) => setLocalQuery(e.target.value)}
-                  placeholder={`搜索 ${localFamilies.length} 个字体`}
-                  className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
-                />
-                <div className="border-input bg-background max-h-60 overflow-y-auto rounded-md border shadow-xs">
-                  {filteredLocal.map((family) => {
-                    const optValue = `local:${family}`;
-                    const selected = optValue === value;
-                    return (
-                      <button
-                        key={family}
-                        type="button"
-                        onClick={() => {
-                          onValueChange(optValue);
-                          setOpen(false);
-                        }}
-                        className={`border-border flex w-full items-center justify-between border-b px-3 py-2 text-left text-sm last:border-b-0 ${
-                          selected
-                            ? "bg-muted/50 text-foreground"
-                            : "hover:bg-accent text-slate-700"
-                        }`}
-                      >
-                        <span
-                          className="truncate"
-                          style={{ fontFamily: family }}
-                        >
-                          {family}
-                        </span>
-                        {selected && <Check className="h-4 w-4 shrink-0" />}
-                      </button>
-                    );
-                  })}
-                  {filteredLocal.length === 0 && (
-                    <p className="text-muted-foreground px-3 py-2 text-sm">
-                      无匹配字体
-                    </p>
-                  )}
-                </div>
-              </>
-            )}
-
-            <div className="flex gap-2 pt-1">
-              <Input
-                value={customLocalFont}
-                onChange={(e) => onCustomLocalFontChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") onApplyCustomLocalFont();
-                }}
-                placeholder="或手动输入本机字体名"
-                className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
-              />
-              <Button
-                type="button"
-                onClick={onApplyCustomLocalFont}
-                variant="outline"
-                className="border-input bg-background h-9 shrink-0 rounded-md border px-3 text-sm shadow-xs"
-              >
-                应用
-              </Button>
-            </div>
-            <p className="text-muted-foreground text-xs leading-5">
-              可输入系统已安装字体名，如“田英章楷书”“方正楷体”“AaKaiSong”。
-            </p>
-          </div>
-        )}
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function ExpandableTriggerRow({
-  label,
-  value,
-  expanded,
-  onToggle,
-}: {
-  label: string;
-  value: string;
-  expanded: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="flex h-9 w-full items-center justify-between gap-0.5 text-sm"
-    >
-      <div className="flex flex-1 items-center justify-between">
-        <label className="max-w-[45%] truncate text-sm font-medium text-slate-700">
-          {label}
-        </label>
-        <div className="max-w-[55%] truncate text-sm text-slate-700">
-          {value}
-        </div>
-      </div>
-      <ChevronsUpDown
-        className={`size-4 flex-none shrink-0 opacity-50 transition-transform ${
-          expanded ? "rotate-180" : ""
-        }`}
-      />
-    </button>
-  );
-}
-
-function CompactSwitchRow({
-  label,
-  checked,
-  onCheckedChange,
-}: {
-  label: string;
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
-}) {
-  return (
-    <div className="flex h-9 items-center justify-between text-sm">
-      <label className="text-sm font-medium text-slate-700">{label}</label>
-      <Switch
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-        className="h-[1.15rem] w-8 shadow-xs"
-      />
-    </div>
-  );
-}
-
-function CompactSelectRow({
-  label,
-  value,
-  options,
-  onValueChange,
-}: {
-  label: string;
-  value: string;
-  options: { value: string; label: string }[];
-  onValueChange: (value: string) => void;
-}) {
-  const currentLabel =
-    options.find((item) => item.value === value)?.label ?? value;
-
-  return (
-    <div className="flex h-9 items-center justify-between text-sm">
-      <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger className="relative h-9 w-full gap-0.5 border-0 bg-transparent px-0 text-sm shadow-none outline-none select-none">
-          <div className="flex w-full items-center justify-between gap-1 text-sm">
-            <label className="max-w-[45%] truncate text-sm font-medium text-slate-700">
-              {label}
-            </label>
-            <div className="max-w-[50%] truncate">
-              <span>{currentLabel}</span>
-            </div>
-          </div>
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
-function CompactSliderRow({
-  label,
-  value,
-  onChange,
-  min,
-  max,
-  step,
-  unit,
-}: {
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-  min: number;
-  max: number;
-  step: number;
-  unit: string;
-}) {
-  const display = Number.isInteger(value) ? String(value) : value.toFixed(1);
-
-  return (
-    <div className="flex h-9 items-center gap-3 text-sm">
-      <label className="min-w-14 text-sm font-medium text-slate-700">
-        {label}
-      </label>
-      <div className="flex flex-1 items-center gap-1">
-        <Slider
-          value={[value]}
-          onValueChange={([next]) => onChange(next)}
-          min={min}
-          max={max}
-          step={step}
-          className="flex-1"
-        />
-        <div className="max-w-12 min-w-4 overflow-x-hidden text-right text-xs tabular-nums">
-          {display}
-          {unit}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CompactColorRow({
-  label,
-  value,
-  expanded,
-  onToggle,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  expanded: boolean;
-  onToggle: () => void;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="py-1">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex h-9 w-full items-center justify-between text-sm"
-      >
-        <label className="text-sm font-medium text-slate-700">{label}</label>
-        <span className="size-5 rounded" style={{ backgroundColor: value }} />
-      </button>
-      {expanded && (
-        <div className="flex items-center gap-2 pb-2">
-          <input
-            type="color"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="border-input bg-background h-9 w-10 cursor-pointer rounded-md border p-1"
-          />
-          <Input
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
-          />
-        </div>
-      )}
-    </div>
   );
 }

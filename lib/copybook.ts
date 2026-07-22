@@ -287,6 +287,235 @@ function drawCharCell(
   ctx.restore();
 }
 
+interface StrokeTemplateRow {
+  pattern: string;
+  example: string;
+}
+
+function parseStrokeTemplateRows(content: string): StrokeTemplateRow[] {
+  return content
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [pattern = "", example = ""] = line.split("\t");
+      return { pattern, example };
+    })
+    .filter((row) => row.pattern.length > 0 || row.example.length > 0);
+}
+
+function drawLineGuides(
+  ctx: CanvasRenderingContext2D,
+  settings: CopybookSettings,
+  m: MarginPx,
+  contentWidth: number,
+  contentHeight: number,
+  lineHeight: number,
+): number[] {
+  const positions: number[] = [];
+  ctx.save();
+  ctx.strokeStyle = settings.lineColor;
+  ctx.lineWidth = 1;
+  for (
+    let yBase = m.top + lineHeight;
+    yBase <= m.top + contentHeight;
+    yBase += lineHeight
+  ) {
+    ctx.beginPath();
+    ctx.moveTo(m.left, yBase);
+    ctx.lineTo(m.left + contentWidth, yBase);
+    ctx.stroke();
+    positions.push(yBase);
+  }
+  ctx.restore();
+  return positions;
+}
+
+function drawWordCopybook(
+  ctx: CanvasRenderingContext2D,
+  settings: CopybookSettings,
+  m: MarginPx,
+  contentWidth: number,
+  contentHeight: number,
+) {
+  const groups = settings.content
+    .split(/\s+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const cell = mmToPx(settings.gridSize);
+  const cols = Math.max(1, Math.floor(contentWidth / cell));
+  const rowGap = mmToPx(settings.rowGap);
+  const groupGap = mmToPx(settings.groupSpacing || 4);
+  const maxY = m.top + contentHeight;
+  const auxRowH = settings.showPinyin ? cell * 0.6 : 0;
+
+  function drawWordLine(y: number, text: string): number {
+    if (y + auxRowH + cell > maxY) return maxY + 1;
+    const chars = Array.from(text).filter((c) => c.trim().length > 0);
+
+    if (settings.showPinyin) {
+      drawPinyinRule(ctx, m.left, y, cols * cell, auxRowH, settings.lineColor);
+      chars.forEach((ch, index) => {
+        if (index >= cols) return;
+        drawPinyinText(
+          ctx,
+          effectivePinyin(ch, settings),
+          m.left + index * cell + cell / 2,
+          y,
+          auxRowH,
+          cell - 4,
+          practiceCellLook(settings, index).color,
+        );
+      });
+      y += auxRowH;
+    }
+
+    for (let c = 0; c < cols; c++) {
+      const ch = chars[c];
+      if (ch && shouldRenderPracticeChar(settings, c)) {
+        drawCharCell(
+          ctx,
+          ch,
+          m.left + c * cell,
+          y,
+          cell,
+          settings,
+          practiceCellLook(settings, c),
+        );
+      } else {
+        drawCellBox(
+          ctx,
+          settings.gridType,
+          m.left + c * cell,
+          y,
+          cell,
+          settings.lineColor,
+        );
+      }
+    }
+
+    return y + cell + rowGap;
+  }
+
+  let y = m.top;
+  for (const word of groups) {
+    y = drawWordLine(y, word);
+    if (y > maxY) break;
+    if (settings.insertEmptyRow) y += groupGap;
+  }
+  while (y + auxRowH + cell <= maxY) {
+    y = drawWordLine(y, "");
+  }
+}
+
+const STROKE_PATTERN_GLYPHS: Record<string, string> = {
+  "right-dot": "丶",
+  "left-dot": "丶",
+  "long-heng": "一",
+  "short-heng": "一",
+  shu: "丨",
+  pie: "丿",
+  na: "㇏",
+  ti: "㇀",
+  "heng-zhe": "乙",
+  "heng-gou": "了",
+  "shu-gou": "亅",
+  "xie-gou": "戈",
+};
+
+function drawStrokeCopybook(
+  ctx: CanvasRenderingContext2D,
+  settings: CopybookSettings,
+  m: MarginPx,
+  contentWidth: number,
+  contentHeight: number,
+) {
+  const rows = parseStrokeTemplateRows(settings.content);
+  const templates =
+    rows.length > 0 ? rows : [{ pattern: "long-heng", example: "一" }];
+  const cell = mmToPx(settings.gridSize);
+  const cols = Math.max(1, Math.floor(contentWidth / cell));
+  const rowGap = mmToPx(settings.rowGap);
+  const maxY = m.top + contentHeight;
+  let y = m.top;
+
+  for (const row of templates) {
+    if (y + cell > maxY) break;
+    const guideChar =
+      row.example.trim().charAt(0) ||
+      STROKE_PATTERN_GLYPHS[row.pattern] ||
+      "一";
+    for (let c = 0; c < cols; c++) {
+      const x = m.left + c * cell;
+      const look = practiceCellLook(settings, c);
+      drawCharCell(ctx, guideChar, x, y, cell, settings, look);
+      if (c === 0) {
+        ctx.save();
+        ctx.fillStyle = "#64748b";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.font = `12px ui-sans-serif, system-ui, sans-serif`;
+        ctx.fillText(row.pattern, x + 4, y + 4);
+        ctx.restore();
+      }
+    }
+    y += cell + rowGap;
+    if (settings.insertEmptyRow) y += cell + rowGap;
+  }
+
+  while (y + cell <= maxY) {
+    for (let c = 0; c < cols; c++) {
+      drawCellBox(
+        ctx,
+        settings.gridType,
+        m.left + c * cell,
+        y,
+        cell,
+        settings.lineColor,
+      );
+    }
+    y += cell + rowGap;
+  }
+}
+
+function measureSpacedText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  spacing: number,
+): number {
+  if (!text) return 0;
+  return ctx.measureText(text).width + Math.max(0, text.length - 1) * spacing;
+}
+
+function drawSpacedText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  spacing: number,
+  style: "solid" | "trace" | "hollow",
+  color: string,
+  traceColor: string,
+  fontSize: number,
+) {
+  let cursorX = x;
+  for (const ch of Array.from(text)) {
+    paintChar(
+      ctx,
+      ch,
+      cursorX,
+      y,
+      style,
+      color,
+      traceColor,
+      fontSize,
+      "left",
+      "alphabetic",
+    );
+    cursorX += ctx.measureText(ch).width + spacing;
+  }
+}
+
 /** 汉字 / 词组 / 数字 / 笔画 / 拼音字帖 */
 function drawCharacterCopybook(
   ctx: CanvasRenderingContext2D,
@@ -441,7 +670,8 @@ function drawParagraphCopybook(
   contentWidth: number,
   contentHeight: number,
 ) {
-  const lineHeight = settings.fontSize + settings.lineSpacing;
+  const lineHeight = settings.fontSize + mmToPx(settings.rowGap);
+  const letterSpacing = settings.lineSpacing;
   setFont(ctx, settings);
 
   const lines: string[] = [];
@@ -450,7 +680,10 @@ function drawParagraphCopybook(
     let cur = "";
     for (const ch of chars) {
       const test = cur + ch;
-      if (ctx.measureText(test).width > contentWidth && cur.length > 0) {
+      if (
+        measureSpacedText(ctx, test, letterSpacing) > contentWidth &&
+        cur.length > 0
+      ) {
         lines.push(cur);
         cur = ch;
       } else {
@@ -460,16 +693,7 @@ function drawParagraphCopybook(
     lines.push(cur);
   }
 
-  ctx.strokeStyle = settings.lineColor;
-  ctx.lineWidth = 1;
-  let yBase = m.top + lineHeight;
-  for (let i = 0; i < lines.length && yBase <= m.top + contentHeight; i++) {
-    ctx.beginPath();
-    ctx.moveTo(m.left, yBase);
-    ctx.lineTo(m.left + contentWidth, yBase);
-    ctx.stroke();
-    yBase += lineHeight;
-  }
+  drawLineGuides(ctx, settings, m, contentWidth, contentHeight, lineHeight);
 
   ctx.save();
   setFont(ctx, settings);
@@ -480,19 +704,18 @@ function drawParagraphCopybook(
         ? "trace"
         : "solid";
   // 范字基线与横线对齐：字坐在横线上，便于描摹（原先上浮 lineSpacing/2）
-  yBase = m.top + lineHeight;
+  let yBase = m.top + lineHeight;
   for (let i = 0; i < lines.length && yBase <= m.top + contentHeight; i++) {
-    paintChar(
+    drawSpacedText(
       ctx,
       lines[i],
       m.left,
       yBase,
+      letterSpacing,
       mode,
       settings.color,
       settings.miaoColor,
       settings.fontSize,
-      "left",
-      "alphabetic",
     );
     yBase += lineHeight;
   }
@@ -580,7 +803,7 @@ function drawEnglishParagraphCopybook(
   contentWidth: number,
   contentHeight: number,
 ) {
-  const lineHeight = settings.fontSize + settings.lineSpacing;
+  const lineHeight = settings.fontSize + mmToPx(settings.rowGap);
   setFont(ctx, settings);
 
   const lines: string[] = [];
@@ -599,16 +822,7 @@ function drawEnglishParagraphCopybook(
     if (cur) lines.push(cur);
   }
 
-  ctx.strokeStyle = settings.lineColor;
-  ctx.lineWidth = 1;
-  let yBase = m.top + lineHeight;
-  for (let i = 0; i < lines.length && yBase <= m.top + contentHeight; i++) {
-    ctx.beginPath();
-    ctx.moveTo(m.left, yBase);
-    ctx.lineTo(m.left + contentWidth, yBase);
-    ctx.stroke();
-    yBase += lineHeight;
-  }
+  drawLineGuides(ctx, settings, m, contentWidth, contentHeight, lineHeight);
 
   ctx.save();
   setFont(ctx, settings);
@@ -619,7 +833,7 @@ function drawEnglishParagraphCopybook(
         ? "trace"
         : "solid";
   // 范字基线与横线对齐：字坐在横线上，便于描摹（原先上浮 lineSpacing/2）
-  yBase = m.top + lineHeight;
+  let yBase = m.top + lineHeight;
   for (let i = 0; i < lines.length && yBase <= m.top + contentHeight; i++) {
     paintChar(
       ctx,
@@ -755,9 +969,7 @@ export function drawCopybook(
       );
       break;
     case "character":
-    case "word":
     case "number":
-    case "stroke":
       drawCharacterCopybook(
         ctx,
         settings,
@@ -766,6 +978,12 @@ export function drawCopybook(
         contentHeight,
         markers,
       );
+      break;
+    case "word":
+      drawWordCopybook(ctx, settings, m, contentWidth, contentHeight);
+      break;
+    case "stroke":
+      drawStrokeCopybook(ctx, settings, m, contentWidth, contentHeight);
       break;
     case "paragraph":
       drawParagraphCopybook(ctx, settings, m, contentWidth, contentHeight);
