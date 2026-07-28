@@ -1,5 +1,5 @@
 import { fontLabel, fontStack, COMMON_FONT_KEYS } from "@/lib/fonts";
-import { STROKE_PRESET } from "@/lib/copybook";
+import { STROKE_CHAR_TO_PATTERN } from "@/lib/copybook";
 import { PAPER_SIZES } from "@/lib/paper";
 import type { CopybookSettings, CopybookType, GridType } from "@/types";
 export {
@@ -54,7 +54,7 @@ export const DEFAULT_CONTENT: Record<CopybookType, string> = {
   word: "春暖花开 阳光明媚",
   paragraph: "床前明月光，疑是地上霜。\n举头望明月，低头思故乡。",
   pinyin: "春夏秋冬",
-  stroke: STROKE_PRESET,
+  stroke: "",
   "english-char": "AaBbCcDd",
   "english-word": "hello world",
   "english-para": "The quick brown fox jumps over the lazy dog.",
@@ -66,7 +66,7 @@ export const CONTENT_PLACEHOLDERS: Record<CopybookType, string> = {
   character: "输入要临写的汉字，例如：静、和、雅、志",
   word: "输入词语，用空格或换行分隔，例如：春暖花开 岁月静好",
   paragraph: "输入诗词、课文或句段内容，支持换行排版",
-  stroke: "输入要练习笔顺的汉字，或直接使用默认笔顺示例",
+  stroke: "点击「编辑」选择要练习的笔画，并挑选包含该笔画的例字",
   pinyin: "输入要练习的汉字，系统会按拼音字帖方式生成",
   "english-char": "输入字母序列，例如：Aa Bb Cc Dd",
   "english-word": "输入英文单词，例如：hello world future design",
@@ -82,18 +82,18 @@ export interface StrokeDraftRow {
 }
 
 export const STROKE_PATTERN_OPTIONS = [
-  { value: "right-dot", label: "右点" },
-  { value: "left-dot", label: "左点" },
-  { value: "long-heng", label: "长横" },
-  { value: "short-heng", label: "短横" },
-  { value: "shu", label: "竖" },
-  { value: "pie", label: "撇" },
-  { value: "na", label: "捺" },
-  { value: "ti", label: "提" },
-  { value: "heng-zhe", label: "横折" },
-  { value: "heng-gou", label: "横钩" },
-  { value: "shu-gou", label: "竖钩" },
-  { value: "xie-gou", label: "斜钩" },
+  { value: "right-dot", label: "右点", examples: "主玉卜义" },
+  { value: "left-dot", label: "左点", examples: "小少尚" },
+  { value: "long-heng", label: "长横", examples: "三王五工" },
+  { value: "short-heng", label: "短横", examples: "二土士正" },
+  { value: "shu", label: "竖", examples: "中十干丰" },
+  { value: "pie", label: "撇", examples: "人千白禾" },
+  { value: "na", label: "捺", examples: "八大天木" },
+  { value: "ti", label: "提", examples: "民习扛" },
+  { value: "heng-zhe", label: "横折", examples: "口日田回" },
+  { value: "heng-gou", label: "横钩", examples: "了你宁买" },
+  { value: "shu-gou", label: "竖钩", examples: "小水了于" },
+  { value: "xie-gou", label: "斜钩", examples: "七戈毛弋氏" },
 ] as const;
 
 export function createStrokeRow(
@@ -114,7 +114,9 @@ export function parseStrokeContent(content: string): StrokeDraftRow[] {
     .filter(Boolean)
     .map((line) => {
       const [pattern, example = ""] = line.split("\t");
-      const matched = STROKE_PATTERN_OPTIONS.find((item) => item.value === pattern);
+      const matched = STROKE_PATTERN_OPTIONS.find(
+        (item) => item.value === pattern,
+      );
       if (matched) return createStrokeRow(matched.value, example);
       return null;
     })
@@ -127,14 +129,7 @@ export function parseStrokeContent(content: string): StrokeDraftRow[] {
     .filter((ch) => ch.trim().length > 0)
     .map((ch) => {
       const fallbackPattern =
-        {
-          "一": "long-heng",
-          "丨": "shu",
-          "丿": "pie",
-          "㇏": "na",
-          "丶": "right-dot",
-          "㇀": "ti",
-        }[ch] ?? STROKE_PATTERN_OPTIONS[0].value;
+        STROKE_CHAR_TO_PATTERN[ch] ?? STROKE_PATTERN_OPTIONS[0].value;
       return createStrokeRow(fallbackPattern, ch);
     });
 }
@@ -150,32 +145,33 @@ export function createDefaultSettings(
   return {
     type,
     content: DEFAULT_CONTENT[type],
-  fontFamily: "kaiti",
-  fontWeight: "normal",
-  gridType: "tian",
-  gridSize: 10,
-  rowGap: 2,
-  margin: { top: 36, right: 36, bottom: 36, left: 36 },
-  fontScale: isNumber ? 85 : 68,
-  fontSize: 28,
-  vOffset: isNumber ? 20 : 0,
-  renderMode: "miao",
-  solidCount: 20,
-  groupSpacing: 4,
-  miaoColor: "#94a3b8",
-  lineColor: "#98a5b9",
-  color: "#1f2937",
-  highlightColor: "#1f2937",
-  showPinyin: false,
-  showStroke: false,
-  highlightFirst: true,
-  highlightCount: 1,
-  insertEmptyRow: false,
-  insertEmptyCol: false,
-  pinyinOverrides: {},
-  lineSpacing: 12,
-  paperSize: PAPER_SIZES[0],
+    fontFamily: "kaiti",
+    fontWeight: "normal",
+    gridType: "tian",
+    gridSize: 10,
+    rowGap: 2,
+    margin: { top: 36, right: 36, bottom: 36, left: 36 },
+    fontScale: isNumber ? 85 : 68,
+    fontSize: 28,
+    vOffset: isNumber ? 20 : 0,
+    renderMode: "miao",
+    solidCount: 20,
+    groupSpacing: 4,
+    miaoColor: "#94a3b8",
+    lineColor: "#98a5b9",
+    color: "#1f2937",
+    highlightColor: "#1f2937",
+    showPinyin: false,
+    showStroke: false,
+    highlightFirst: true,
+    highlightCount: 1,
+    insertEmptyRow: false,
+    insertEmptyCol: false,
+    pinyinOverrides: {},
+    lineSpacing: 12,
+    paperSize: PAPER_SIZES[0],
   };
 }
 
-export const DEFAULT_SETTINGS: CopybookSettings = createDefaultSettings("character");
+export const DEFAULT_SETTINGS: CopybookSettings =
+  createDefaultSettings("character");

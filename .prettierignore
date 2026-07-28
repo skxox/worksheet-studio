@@ -11,5 +11,8 @@ pnpm-lock.yaml
 *.tsbuildinfo
 next-env.d.ts
 
+# Husky internals
+.husky/_
+
 # Logs
 *.log

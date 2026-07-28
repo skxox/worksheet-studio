@@ -170,6 +170,9 @@ export function getContentPreview(
     return content;
   }
 
+  // 笔顺拆解默认留空：空内容时回退到占位文案，不在内容卡里显示默认笔画
+  if (!content.trim()) return "";
+
   const rows = strokeRows.length ? strokeRows : parseStrokeContent(content);
   return rows
     .map((row) => {

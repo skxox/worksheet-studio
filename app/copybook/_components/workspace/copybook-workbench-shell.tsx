@@ -18,7 +18,10 @@ import { drawCopybook } from "@/lib/copybook";
 import type { PinyinToggleMarker } from "@/lib/copybook";
 import { charAllPinyins } from "@/lib/pinyin";
 import { getCanvasSize } from "@/lib/paper";
-import { CopybookLeftNav, CopybookMobileTypeBar } from "../layout/copybook-left-nav";
+import {
+  CopybookLeftNav,
+  CopybookMobileTypeBar,
+} from "../layout/copybook-left-nav";
 import {
   COPYBOOK_TYPE_GROUPS,
   getCopybookTypeMeta,
@@ -36,9 +39,7 @@ import {
   sanitizeCopybookSettings,
 } from "./copybook-workbench.helpers";
 import type { ExpandedPanelKey } from "../panels/copybook-settings-panels";
-import {
-  getCopybookTemplate,
-} from "./copybook-template-resolver";
+import { getCopybookTemplate } from "./copybook-template-resolver";
 
 export function CopybookWorkbenchShell({
   initialType = "character",
@@ -209,7 +210,9 @@ export function CopybookWorkbenchShell({
   const [draftContent, setDraftContent] = useState("");
   const [strokeRows, setStrokeRows] = useState<StrokeDraftRow[]>([]);
   const openContentEditor = () => {
-    const nextState = getCopybookTemplate(t).getEditorState(safeSettings.content);
+    const nextState = getCopybookTemplate(t).getEditorState(
+      safeSettings.content,
+    );
     setDraftContent(nextState.draftContent);
     setStrokeRows(nextState.strokeRows);
     setContentModalOpen(true);
@@ -227,133 +230,133 @@ export function CopybookWorkbenchShell({
     >
       <div
         className="print-out container mx-auto flex w-full max-w-(--content-width) flex-col gap-3 pt-5"
-        style={{ "--content-width": "1090px" } as CSSProperties}
+        style={{ "--content-width": "1400px" } as CSSProperties}
       >
-        <CopybookMobileTypeBar
-          groups={COPYBOOK_TYPE_GROUPS}
-          currentType={t}
-        />
+        <CopybookMobileTypeBar groups={COPYBOOK_TYPE_GROUPS} currentType={t} />
         <div className="flex w-full gap-4">
           <CopybookLeftNav groups={COPYBOOK_TYPE_GROUPS} currentType={t} />
 
-          <section className="relative">
-          <div
-            className="relative"
-            style={{
-              minWidth: `${canvasSize.width}px`,
-              minHeight: `${canvasSize.height}px`,
-            }}
-          >
+          <section className="relative flex flex-1 justify-center">
             <div
-              id="print-body"
-              className="pointer-events-none"
+              className="relative"
               style={{
                 minWidth: `${canvasSize.width}px`,
                 minHeight: `${canvasSize.height}px`,
               }}
             >
-              <canvas
-                ref={canvasRef}
-                id="paper-canvas-0"
-                className="paper-canvas print-page shadow-paper rounded-sm ring-1 ring-black/5"
+              <div
+                id="print-body"
+                className="pointer-events-none"
                 style={{
-                  width: `${canvasSize.width}px`,
-                  height: `${canvasSize.height}px`,
-                  // 父级 #print-body 为 pointer-events:none，此处放开以接收多音字切换点击
-                  pointerEvents: "auto",
+                  minWidth: `${canvasSize.width}px`,
+                  minHeight: `${canvasSize.height}px`,
                 }}
-                onClick={handleCanvasClick}
-                onMouseMove={handleCanvasMove}
-              />
-            </div>
-            {pinyinMenu && (
-              <>
-                {/* 点击外部关闭 */}
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setPinyinMenu(null)}
-                  aria-hidden
+              >
+                <canvas
+                  ref={canvasRef}
+                  id="paper-canvas-0"
+                  className="paper-canvas print-page shadow-paper rounded-sm ring-1 ring-black/5"
+                  style={{
+                    width: `${canvasSize.width}px`,
+                    height: `${canvasSize.height}px`,
+                    // 父级 #print-body 为 pointer-events:none，此处放开以接收多音字切换点击
+                    pointerEvents: "auto",
+                  }}
+                  onClick={handleCanvasClick}
+                  onMouseMove={handleCanvasMove}
                 />
-                {/* 读音下拉框：相对画布定位，随页面滚动 */}
-                <div
-                  role="listbox"
-                  aria-label={`${pinyinMenu.char} 的读音`}
-                  className="border-input bg-background absolute z-50 min-w-28 overflow-hidden rounded-md border p-1 shadow-lg"
-                  style={{ left: pinyinMenu.left, top: pinyinMenu.top }}
-                >
-                  {pinyinReadings.map((py, i) => (
-                    <button
-                      key={py + i}
-                      type="button"
-                      role="option"
-                      aria-selected={i === pinyinCurrent}
-                      onClick={() => pickPinyin(pinyinMenu.char, i)}
-                      className={`hover:bg-accent flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-left text-sm transition-colors ${
-                        i === pinyinCurrent
-                          ? "bg-accent/60 text-foreground font-medium"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      <span>{py}</span>
-                      {i === pinyinCurrent && (
-                        <Check className="text-primary h-3.5 w-3.5" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </section>
+              </div>
+              {pinyinMenu && (
+                <>
+                  {/* 点击外部关闭 */}
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setPinyinMenu(null)}
+                    aria-hidden
+                  />
+                  {/* 读音下拉框：相对画布定位，随页面滚动 */}
+                  <div
+                    role="listbox"
+                    aria-label={`${pinyinMenu.char} 的读音`}
+                    className="border-input bg-background absolute z-50 min-w-28 overflow-hidden rounded-md border p-1 shadow-lg"
+                    style={{ left: pinyinMenu.left, top: pinyinMenu.top }}
+                  >
+                    {pinyinReadings.map((py, i) => (
+                      <button
+                        key={py + i}
+                        type="button"
+                        role="option"
+                        aria-selected={i === pinyinCurrent}
+                        onClick={() => pickPinyin(pinyinMenu.char, i)}
+                        className={`hover:bg-accent flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-left text-sm transition-colors ${
+                          i === pinyinCurrent
+                            ? "bg-accent/60 text-foreground font-medium"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        <span>{py}</span>
+                        {i === pinyinCurrent && (
+                          <Check className="text-primary h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
 
-        <aside className="glass-strong sticky top-16 flex max-h-[calc(100vh-80px)] w-58 min-w-50 shrink-0 flex-col gap-2 overflow-y-auto rounded-2xl p-2">
-          <div className="flex gap-2">
-            <Button
-              onClick={() =>
-                exportPDF(
-                  canvasRef.current,
-                  "copybook.pdf",
-                  safeSettings.paperSize,
-                )
-              }
-              variant="outline"
-              className="bg-background hover:bg-accent hover:text-accent-foreground inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium whitespace-nowrap shadow-1 transition-all"
-            >
-              <Download className="h-4 w-4" />导 出
-            </Button>
-            <Button
-              onClick={handlePrint}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap shadow-1 transition-all"
-            >
-              <Printer className="h-4 w-4" />打 印
-            </Button>
-          </div>
+          <aside className="glass-strong sticky top-16 flex max-h-[calc(100vh-80px)] w-58 min-w-50 shrink-0 flex-col gap-2 overflow-y-auto rounded-2xl p-2">
+            <div className="flex gap-2">
+              <Button
+                onClick={() =>
+                  exportPDF(
+                    canvasRef.current,
+                    "copybook.pdf",
+                    safeSettings.paperSize,
+                  )
+                }
+                variant="outline"
+                className="bg-background hover:bg-accent hover:text-accent-foreground shadow-1 inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium whitespace-nowrap transition-all"
+              >
+                <Download className="h-4 w-4" />导 出
+              </Button>
+              <Button
+                onClick={handlePrint}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-1 inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap transition-all"
+              >
+                <Printer className="h-4 w-4" />打 印
+              </Button>
+            </div>
 
-          {ContentCard ? (
-            <ContentCard
-              type={t}
-              label={activeLabel}
-              content={template.getCardContent(safeSettings.content, contentPreview)}
-              placeholder={CONTENT_PLACEHOLDERS[t]}
-              onEdit={openContentEditor}
-            />
-          ) : null}
+            {ContentCard ? (
+              <ContentCard
+                type={t}
+                label={activeLabel}
+                content={template.getCardContent(
+                  safeSettings.content,
+                  contentPreview,
+                )}
+                placeholder={CONTENT_PLACEHOLDERS[t]}
+                onEdit={openContentEditor}
+              />
+            ) : null}
 
-          {Sidebar ? (
-            <Sidebar
-              type={t}
-              settings={safeSettings}
-              marginSummary={marginSummary}
-              expandedPanel={expandedPanel}
-              togglePanel={togglePanel}
-              updateSetting={updateSetting}
-              updateMargin={updateMargin}
-              customLocalFont={customLocalFont}
-              onCustomLocalFontChange={setCustomLocalFont}
-              onApplyCustomLocalFont={applyCustomLocalFont}
-            />
-          ) : null}
-        </aside>
+            {Sidebar ? (
+              <Sidebar
+                type={t}
+                settings={safeSettings}
+                marginSummary={marginSummary}
+                expandedPanel={expandedPanel}
+                togglePanel={togglePanel}
+                updateSetting={updateSetting}
+                updateMargin={updateMargin}
+                customLocalFont={customLocalFont}
+                onCustomLocalFontChange={setCustomLocalFont}
+                onApplyCustomLocalFont={applyCustomLocalFont}
+              />
+            ) : null}
+          </aside>
         </div>
       </div>
 

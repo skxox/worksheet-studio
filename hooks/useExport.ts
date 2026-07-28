@@ -7,13 +7,13 @@ import type { PaperSize } from "@/types";
 /** 导出逻辑封装：PDF / SVG / PNG，全部从 canvas 或 svg 字符串直出 */
 export function useExport() {
   const exportPDF = useCallback(
-    (
+    async (
       canvas: HTMLCanvasElement | null,
       filename: string,
       paperSize: PaperSize,
-    ) => {
+    ): Promise<void> => {
       if (!canvas) return;
-      exportCanvasToPDF(canvas, filename, paperSize);
+      await exportCanvasToPDF(canvas, filename, paperSize);
     },
     [],
   );

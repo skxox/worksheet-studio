@@ -2,13 +2,34 @@
   "name": "worksheet-studio",
   "version": "0.1.0",
   "private": true,
+  "description": "字帖大师 — 三合一在线字帖平台（字帖工坊 / 手写模拟器 / 纸张工厂），完全免费、无需登录。",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "packageManager": "pnpm@11.9.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "lint:fix": "eslint --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{css,md,json,yml,yaml}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@fontsource/long-cang": "^5.2.8",
@@ -37,15 +58,22 @@
     "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.0",
+    "@commitlint/config-conventional": "^19.8.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^3.2.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "husky": "^9.1.0",
+    "lint-staged": "^15.2.0",
     "prettier": "^3.9.5",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite-tsconfig-paths": "^5.1.0",
+    "vitest": "^3.2.0"
   }
 }

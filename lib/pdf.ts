@@ -1,15 +1,15 @@
-import jsPDF from "jspdf";
 import type { PaperSize } from "@/types";
 
 /**
  * 把 canvas 直接导出为 PDF（不经过 html2canvas，规避 Tailwind v4 oklch 解析问题）。
- * 图片按纸张宽度等比缩放，垂直居中。
+ * jsPDF 按需动态加载，避免进入首屏 bundle；图片按纸张宽度等比缩放，垂直居中。
  */
-export function exportCanvasToPDF(
+export async function exportCanvasToPDF(
   canvas: HTMLCanvasElement,
   filename: string = "worksheet.pdf",
   paperSize: PaperSize = { name: "A4", width: 210, height: 297 },
-): void {
+): Promise<void> {
+  const { default: jsPDF } = await import("jspdf");
   const imgData = canvas.toDataURL("image/png");
   const orientation: "p" | "l" = paperSize.width > paperSize.height ? "l" : "p";
   const pdf = new jsPDF({
@@ -26,12 +26,13 @@ export function exportCanvasToPDF(
 }
 
 /** 多页 PDF：每个 canvas 一页（纸张多页导出用） */
-export function exportCanvasesToPDF(
+export async function exportCanvasesToPDF(
   canvases: HTMLCanvasElement[],
   filename: string = "worksheet.pdf",
   paperSize: PaperSize = { name: "A4", width: 210, height: 297 },
-): void {
+): Promise<void> {
   if (canvases.length === 0) return;
+  const { default: jsPDF } = await import("jspdf");
   const orientation: "p" | "l" = paperSize.width > paperSize.height ? "l" : "p";
   const pdf = new jsPDF({
     orientation,

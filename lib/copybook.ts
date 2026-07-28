@@ -293,15 +293,29 @@ interface StrokeTemplateRow {
 }
 
 function parseStrokeTemplateRows(content: string): StrokeTemplateRow[] {
-  return content
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [pattern = "", example = ""] = line.split("\t");
-      return { pattern, example };
-    })
-    .filter((row) => row.pattern.length > 0 || row.example.length > 0);
+  // 旧版本默认内容是基本笔画预设串；新版默认留空，故把遗留预设当作空内容处理，
+  // 让曾访问过的用户（localStorage 仍是旧预设）也得到「空白练习页」的新默认行为。
+  if (content.trim() === STROKE_PRESET) return [];
+  const rows: StrokeTemplateRow[] = [];
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const [pattern = "", example = ""] = trimmed.split("\t");
+    if (pattern in STROKE_PATTERN_GLYPHS) {
+      // 序列化格式："pattern\t示例字"
+      rows.push({ pattern, example: example.trim() });
+    } else {
+      // 预设串 / 旧格式 / 纯汉字：每个非空白字符单独成行，按字回退到对应笔画
+      for (const ch of Array.from(pattern)) {
+        if (!ch.trim()) continue;
+        rows.push({
+          pattern: STROKE_CHAR_TO_PATTERN[ch] ?? "long-heng",
+          example: ch,
+        });
+      }
+    }
+  }
+  return rows;
 }
 
 function drawLineGuides(
@@ -589,6 +603,19 @@ const STROKE_PATTERN_GLYPHS: Record<string, string> = {
   "xie-gou": "戈",
 };
 
+/** 单字 → 笔画 pattern 回退：用于预设串 / 旧格式 / 纯汉字内容的逐字解析。
+ *  与 `app/copybook/copybook-config.ts` 的 parseStrokeContent 共用，避免两处解析不一致。 */
+export const STROKE_CHAR_TO_PATTERN: Record<string, string> = {
+  一: "long-heng",
+  丨: "shu",
+  丿: "pie",
+  "㇏": "na",
+  丶: "right-dot",
+  "㇀": "ti",
+  "𠃋": "heng-zhe",
+  "𠃌": "heng-gou",
+};
+
 function drawStrokeCopybook(
   ctx: CanvasRenderingContext2D,
   settings: CopybookSettings,
@@ -597,32 +624,30 @@ function drawStrokeCopybook(
   contentHeight: number,
 ) {
   const rows = parseStrokeTemplateRows(settings.content);
-  const templates =
-    rows.length > 0 ? rows : [{ pattern: "long-heng", example: "一" }];
   const cell = mmToPx(settings.gridSize);
   const cols = Math.max(1, Math.floor(contentWidth / cell));
   const rowGap = mmToPx(settings.rowGap);
   const maxY = m.top + contentHeight;
   let y = m.top;
 
-  for (const row of templates) {
+  for (const row of rows) {
     if (y + cell > maxY) break;
-    const guideChar =
-      row.example.trim().charAt(0) ||
-      STROKE_PATTERN_GLYPHS[row.pattern] ||
-      "一";
+    // 笔顺拆解练习的是「包含该笔画的字」，而非笔画本身：无例字则该行只画空格、不绘字
+    const guideChar = row.example.trim().charAt(0);
     for (let c = 0; c < cols; c++) {
       const x = m.left + c * cell;
-      const look = practiceCellLook(settings, c);
-      drawCharCell(ctx, guideChar, x, y, cell, settings, look);
-      if (c === 0) {
-        ctx.save();
-        ctx.fillStyle = "#64748b";
-        ctx.textAlign = "left";
-        ctx.textBaseline = "top";
-        ctx.font = `12px ui-sans-serif, system-ui, sans-serif`;
-        ctx.fillText(row.pattern, x + 4, y + 4);
-        ctx.restore();
+      if (guideChar) {
+        drawCharCell(
+          ctx,
+          guideChar,
+          x,
+          y,
+          cell,
+          settings,
+          practiceCellLook(settings, c),
+        );
+      } else {
+        drawCellBox(ctx, settings.gridType, x, y, cell, settings.lineColor);
       }
     }
     y += cell + rowGap;
