@@ -27,10 +27,23 @@ export const GRID_TYPES: { value: GridType; label: string }[] = [
   { value: "yuanmi", label: "圆米格" },
 ];
 
+/** 篇章誊写可选的方格类型：默认横线格，另支持 7 种方格（文字流式铺入）。 */
+export const PARAGRAPH_GRID_TYPES: { value: GridType; label: string }[] = [
+  { value: "line", label: "横线格" },
+  { value: "essay", label: "作文格" },
+  { value: "tian", label: "田字格" },
+  { value: "mi", label: "米字格" },
+  { value: "huigong", label: "回宫格" },
+  { value: "jiugong", label: "九宫格" },
+  { value: "huitian", label: "回田格" },
+  { value: "huimi", label: "回米格" },
+];
+
 export const GRID_SIZES = [8, 10, 12, 15, 20];
 
 export type RenderMode = CopybookSettings["renderMode"];
 export const VALID_GRID_TYPES: GridType[] = [
+  "line",
   "tian",
   "mi",
   "huigong",
@@ -142,12 +155,13 @@ export function createDefaultSettings(
   type: CopybookType = "character",
 ): CopybookSettings {
   const isNumber = type === "number";
+  const isLineTemplate = type === "paragraph" || type === "english-para";
   return {
     type,
     content: DEFAULT_CONTENT[type],
     fontFamily: "kaiti",
     fontWeight: "normal",
-    gridType: "tian",
+    gridType: isLineTemplate ? "line" : "tian",
     gridSize: 10,
     rowGap: 2,
     margin: { top: 36, right: 36, bottom: 36, left: 36 },
@@ -168,7 +182,7 @@ export function createDefaultSettings(
     insertEmptyRow: false,
     insertEmptyCol: false,
     pinyinOverrides: {},
-    lineSpacing: 12,
+    lineSpacing: isLineTemplate ? 0 : 12,
     paperSize: PAPER_SIZES[0],
   };
 }

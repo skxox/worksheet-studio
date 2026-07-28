@@ -69,6 +69,7 @@ export type CopybookType =
   | "control"; // 控笔练习
 
 export type GridType =
+  | "line" // 横线格（篇章/句段行式布局，不画方格）
   | "tian" // 田字格
   | "mi" // 米字格
   | "huigong" // 回宫格

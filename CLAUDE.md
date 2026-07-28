@@ -18,7 +18,8 @@
 
 ### 纯逻辑（可在 Node / Vitest 下单测，无 Canvas/DOM 副作用）
 
-- `lib/paper/geometry.ts` —— mm↔px、纸张尺寸/主题常量。**新增纯几何放这里**。
+- `lib/units.ts` —— 单位换算（mm↔px↔pt，含 DPI 常量）。**全站唯一的换算处**，勿到处写死 `3.7795`/`96/25.4`。
+- `lib/paper/geometry.ts` —— 纸张尺寸/主题常量 + 透出 `@/lib/units` 的换算。**新增纯几何放这里**。
 - `lib/pinyin.ts` —— 拼音（基于 `pinyin-pro`）；多音字读音缓存。
 - `lib/fonts.ts` —— 字体注册表（`fontStack`/`fontLabel`/`fontWebFamily`）。
 - `lib/svg.ts` —— `paperToSvg` 纯字符串构建。

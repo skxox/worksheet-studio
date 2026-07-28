@@ -326,23 +326,49 @@ function drawLineGuides(
   contentHeight: number,
   lineHeight: number,
 ): number[] {
-  const positions: number[] = [];
+  const rowCount = Math.max(0, Math.floor(contentHeight / lineHeight));
+  if (rowCount <= 0) return [];
+  const x0 = m.left;
+  const x1 = m.left + contentWidth;
+  // 双横线间距：随行高自适应，夹在合理区间
+  const gap = Math.max(1.5, Math.min(3, lineHeight * 0.07));
+
   ctx.save();
   ctx.strokeStyle = settings.lineColor;
   ctx.lineWidth = 1;
-  for (
-    let yBase = m.top + lineHeight;
-    yBase <= m.top + contentHeight;
-    yBase += lineHeight
-  ) {
-    ctx.beginPath();
-    ctx.moveTo(m.left, yBase);
-    ctx.lineTo(m.left + contentWidth, yBase);
-    ctx.stroke();
-    positions.push(yBase);
+  for (let i = 0; i <= rowCount; i++) {
+    const y = m.top + i * lineHeight;
+    const isEdge = i === 0 || i === rowCount;
+    if (isEdge) {
+      // 首条 / 末条：单横线
+      ctx.beginPath();
+      ctx.moveTo(x0, y);
+      ctx.lineTo(x1, y);
+      ctx.stroke();
+    } else {
+      // 中间行界：双横线（两条平行线分列边界两侧，相邻两行文字居于其上下）
+      ctx.beginPath();
+      ctx.moveTo(x0, y - gap);
+      ctx.lineTo(x1, y - gap);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x0, y + gap);
+      ctx.lineTo(x1, y + gap);
+      ctx.stroke();
+    }
   }
   ctx.restore();
-  return positions;
+
+  // 返回每行「可绘空间」的垂直中心：上下边界各取其内侧线（双横线取靠近行内的那根，
+  // 单线取其本身）再求中点。文字按此中心绘制 = 在双横线内部空间上下居中。
+  const centers: number[] = [];
+  for (let r = 0; r < rowCount; r++) {
+    const topY = m.top + r * lineHeight;
+    const innerTop = topY + (r === 0 ? 0 : gap);
+    const innerBottom = topY + lineHeight - (r + 1 === rowCount ? 0 : gap);
+    centers.push((innerTop + innerBottom) / 2);
+  }
+  return centers;
 }
 
 function drawWordCopybook(
@@ -669,13 +695,39 @@ function drawStrokeCopybook(
   }
 }
 
+/** 段前缩进的「整字宽」单位：取文本中首个非空字符的实测推进宽度（按当前字体，
+ *  不写死 1em）——CJK≈一个字宽；拉丁文取首字母宽；纯空白回退字号。 */
+function indentUnitWidth(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  fontSize: number,
+): number {
+  for (const ch of Array.from(text)) {
+    if (ch.trim()) return ctx.measureText(ch).width;
+  }
+  return fontSize;
+}
+
 function measureSpacedText(
   ctx: CanvasRenderingContext2D,
   text: string,
   spacing: number,
+  fontSize: number,
 ): number {
   if (!text) return 0;
-  return ctx.measureText(text).width + Math.max(0, text.length - 1) * spacing;
+  const unit = indentUnitWidth(ctx, text, fontSize);
+  let w = 0;
+  let leading = true;
+  for (const ch of Array.from(text)) {
+    if (ch.trim()) {
+      leading = false;
+      w += ctx.measureText(ch).width + spacing;
+    } else {
+      // 段首空白 = 缩进，按整字宽；段中空白按字体常规空格宽
+      w += (leading ? unit : ctx.measureText(ch).width) + spacing;
+    }
+  }
+  return w;
 }
 
 function drawSpacedText(
@@ -688,22 +740,31 @@ function drawSpacedText(
   color: string,
   traceColor: string,
   fontSize: number,
+  baseline: CanvasTextBaseline = "alphabetic",
 ) {
   let cursorX = x;
+  const unit = indentUnitWidth(ctx, text, fontSize);
+  let leading = true;
   for (const ch of Array.from(text)) {
-    paintChar(
-      ctx,
-      ch,
-      cursorX,
-      y,
-      style,
-      color,
-      traceColor,
-      fontSize,
-      "left",
-      "alphabetic",
-    );
-    cursorX += ctx.measureText(ch).width + spacing;
+    if (ch.trim()) {
+      leading = false;
+      paintChar(
+        ctx,
+        ch,
+        cursorX,
+        y,
+        style,
+        color,
+        traceColor,
+        fontSize,
+        "left",
+        baseline,
+      );
+      cursorX += ctx.measureText(ch).width + spacing;
+    } else {
+      // 段首空白 = 缩进，按整字宽推进（不绘制）；段中空白按常规空格宽
+      cursorX += (leading ? unit : ctx.measureText(ch).width) + spacing;
+    }
   }
 }
 
@@ -854,6 +915,70 @@ function drawCharacterCopybook(
 }
 
 /** 段落字帖：横线 + 文本（描红为浅灰范字便于描摹） */
+/** 篇章誊写方格模式：正文按换行切段、逐字流式铺入选定方格（作文格/田字格/…）；
+ *  字符之外的格子保留为空练习格。字号用「字体大小 %」、可上下偏移（同方格模式）。 */
+function drawParagraphCells(
+  ctx: CanvasRenderingContext2D,
+  settings: CopybookSettings,
+  m: MarginPx,
+  contentWidth: number,
+  contentHeight: number,
+) {
+  const cell = mmToPx(settings.gridSize);
+  const cols = Math.max(1, Math.floor(contentWidth / cell));
+  const rowGap = mmToPx(settings.rowGap);
+  const stepY = cell + rowGap;
+  const maxY = m.top + contentHeight;
+  const rowCount = Math.ceil(contentHeight / stepY) + 1;
+
+  // 1) 把文字按「换行切段」流式铺到网格坐标；保留段首空白作缩进
+  //    （空白也占一格，只是不写字、不计入描红序号）
+  const placed = new Map<string, { ch: string; idx: number }>();
+  let r = 0;
+  let c = 0;
+  let idx = 0;
+  for (const seg of settings.content.split("\n")) {
+    for (const ch of Array.from(seg)) {
+      if (r >= rowCount) break;
+      const isSpace = !ch.trim();
+      placed.set(`${r},${c}`, { ch, idx: isSpace ? -1 : idx });
+      c++;
+      if (!isSpace) idx++;
+      if (c >= cols) {
+        c = 0;
+        r++;
+      }
+    }
+    if (c !== 0) {
+      c = 0;
+      r++;
+    }
+  }
+
+  // 2) 逐格绘制：非空白字绘字（含格 + 上下偏移），空白 / 空位绘空格
+  for (let rr = 0; rr < rowCount; rr++) {
+    const y = m.top + rr * stepY;
+    if (y + cell > maxY + 0.5) break;
+    for (let cc = 0; cc < cols; cc++) {
+      const x = m.left + cc * cell;
+      const hit = placed.get(`${rr},${cc}`);
+      if (hit && hit.ch.trim()) {
+        drawCharCell(
+          ctx,
+          hit.ch,
+          x,
+          y,
+          cell,
+          settings,
+          practiceCellLook(settings, hit.idx),
+        );
+      } else {
+        drawCellBox(ctx, settings.gridType, x, y, cell, settings.lineColor);
+      }
+    }
+  }
+}
+
 function drawParagraphCopybook(
   ctx: CanvasRenderingContext2D,
   settings: CopybookSettings,
@@ -861,10 +986,21 @@ function drawParagraphCopybook(
   contentWidth: number,
   contentHeight: number,
 ) {
-  const lineHeight = settings.fontSize + mmToPx(settings.rowGap);
-  const letterSpacing = settings.lineSpacing;
-  setFont(ctx, settings);
+  // 方格模式（作文格/田字格/…）：文字流式铺入选定方格
+  if (settings.gridType !== "line") {
+    drawParagraphCells(ctx, settings, m, contentWidth, contentHeight);
+    return;
+  }
 
+  // 横线格：行带高度（= 两条横线间距）就等于「方格大小」（行间距不适用于横线格；
+  // 方格大小即行高，默认 10mm≈38px）。字体大小% 基于方格大小的百分比，只缩放带内文字。
+  const cellPx = mmToPx(settings.gridSize);
+  const fontPx = cellPx * (settings.fontScale / 100);
+  const lineHeight = cellPx;
+  const letterSpacing = settings.lineSpacing;
+
+  ctx.save();
+  setFont(ctx, settings, fontPx);
   const lines: string[] = [];
   for (const para of settings.content.split("\n")) {
     const chars = Array.from(para);
@@ -872,7 +1008,7 @@ function drawParagraphCopybook(
     for (const ch of chars) {
       const test = cur + ch;
       if (
-        measureSpacedText(ctx, test, letterSpacing) > contentWidth &&
+        measureSpacedText(ctx, test, letterSpacing, fontPx) > contentWidth &&
         cur.length > 0
       ) {
         lines.push(cur);
@@ -883,32 +1019,41 @@ function drawParagraphCopybook(
     }
     lines.push(cur);
   }
+  ctx.restore();
 
-  drawLineGuides(ctx, settings, m, contentWidth, contentHeight, lineHeight);
+  const centers = drawLineGuides(
+    ctx,
+    settings,
+    m,
+    contentWidth,
+    contentHeight,
+    lineHeight,
+  );
 
   ctx.save();
-  setFont(ctx, settings);
+  setFont(ctx, settings, fontPx);
   const mode: "solid" | "trace" | "hollow" =
     settings.renderMode === "hollow"
       ? "hollow"
       : settings.renderMode === "miao"
         ? "trace"
         : "solid";
-  // 范字基线与横线对齐：字坐在横线上，便于描摹（原先上浮 lineSpacing/2）
-  let yBase = m.top + lineHeight;
-  for (let i = 0; i < lines.length && yBase <= m.top + contentHeight; i++) {
+  // 文字在「双横线内部可绘空间」上下居中；「上下偏移」整体微调
+  const yOffset = (settings.vOffset / 100) * cellPx;
+  const count = Math.min(lines.length, centers.length);
+  for (let i = 0; i < count; i++) {
     drawSpacedText(
       ctx,
       lines[i],
       m.left,
-      yBase,
+      centers[i] + yOffset,
       letterSpacing,
       mode,
       settings.color,
       settings.miaoColor,
-      settings.fontSize,
+      fontPx,
+      "middle",
     );
-    yBase += lineHeight;
   }
   ctx.restore();
 }
@@ -1013,7 +1158,14 @@ function drawEnglishParagraphCopybook(
     if (cur) lines.push(cur);
   }
 
-  drawLineGuides(ctx, settings, m, contentWidth, contentHeight, lineHeight);
+  const centers = drawLineGuides(
+    ctx,
+    settings,
+    m,
+    contentWidth,
+    contentHeight,
+    lineHeight,
+  );
 
   ctx.save();
   setFont(ctx, settings);
@@ -1023,22 +1175,21 @@ function drawEnglishParagraphCopybook(
       : settings.renderMode === "miao"
         ? "trace"
         : "solid";
-  // 范字基线与横线对齐：字坐在横线上，便于描摹（原先上浮 lineSpacing/2）
-  let yBase = m.top + lineHeight;
-  for (let i = 0; i < lines.length && yBase <= m.top + contentHeight; i++) {
+  // 文字在「双横线内部可绘空间」上下居中
+  const count = Math.min(lines.length, centers.length);
+  for (let i = 0; i < count; i++) {
     paintChar(
       ctx,
       lines[i],
       m.left,
-      yBase,
+      centers[i],
       mode,
       settings.color,
       settings.miaoColor,
       settings.fontSize,
       "left",
-      "alphabetic",
+      "middle",
     );
-    yBase += lineHeight;
   }
   ctx.restore();
 }

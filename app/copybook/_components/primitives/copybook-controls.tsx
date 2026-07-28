@@ -138,7 +138,7 @@ function ControlRowEnd({
 export function PanelCard({ children }: { children: React.ReactNode }) {
   const items = React.Children.toArray(children).filter(Boolean);
   return (
-    <div className="bg-card flex flex-col rounded-xl border border-border/50 px-3 py-0.5 shadow-1">
+    <div className="bg-card border-border/50 shadow-1 flex flex-col rounded-xl border px-3 py-0.5">
       {items.map((child, index) => (
         <React.Fragment key={index}>
           {index > 0 && (
@@ -269,7 +269,7 @@ export function FontPickerCard({
         </div>
 
         {tab === "common" ? (
-          <div className="border-input bg-background mt-1.5 max-h-72 overflow-y-auto rounded-md border shadow-1">
+          <div className="border-input bg-background shadow-1 mt-1.5 max-h-72 overflow-y-auto rounded-md border">
             {commonOptions.map((option) => {
               const selected = option.value === value;
               return (
@@ -304,7 +304,7 @@ export function FontPickerCard({
                 type="button"
                 onClick={loadLocalFonts}
                 variant="outline"
-                className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm shadow-1"
+                className="border-input bg-background shadow-1 h-9 w-full rounded-md border px-3 text-sm"
               >
                 读取本机字体
               </Button>
@@ -325,9 +325,9 @@ export function FontPickerCard({
                   value={localQuery}
                   onChange={(e) => setLocalQuery(e.target.value)}
                   placeholder={`搜索 ${localFamilies.length} 个字体`}
-                  className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-1"
+                  className="border-input bg-background shadow-1 h-9 rounded-md border px-3 text-sm"
                 />
-                <div className="border-input bg-background max-h-60 overflow-y-auto rounded-md border shadow-1">
+                <div className="border-input bg-background shadow-1 max-h-60 overflow-y-auto rounded-md border">
                   {filteredLocal.map((family) => {
                     const optValue = `local:${family}`;
                     const selected = optValue === value;
@@ -372,13 +372,13 @@ export function FontPickerCard({
                   if (e.key === "Enter") onApplyCustomLocalFont();
                 }}
                 placeholder="或手动输入本机字体名"
-                className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-1"
+                className="border-input bg-background shadow-1 h-9 rounded-md border px-3 text-sm"
               />
               <Button
                 type="button"
                 onClick={onApplyCustomLocalFont}
                 variant="outline"
-                className="border-input bg-background h-9 shrink-0 rounded-md border px-3 text-sm shadow-1"
+                className="border-input bg-background shadow-1 h-9 shrink-0 rounded-md border px-3 text-sm"
               >
                 应用
               </Button>
@@ -433,7 +433,7 @@ export function CompactSwitchRow({
         <Switch
           checked={checked}
           onCheckedChange={onCheckedChange}
-          className="h-[1.15rem] w-8 shadow-1"
+          className="shadow-1 h-[1.15rem] w-8"
         />
       </ControlRowEnd>
     </ControlRow>
@@ -455,25 +455,22 @@ export function CompactSelectRow({
     options.find((item) => item.value === value)?.label ?? value;
 
   return (
-    <div className="text-sm">
-      <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger className="border-0 bg-transparent px-0 py-0 text-sm shadow-none outline-none select-none [&>svg]:static [&>svg]:justify-self-end">
-          <ControlRow withIndicator>
-            <ControlRowLabel>{label}</ControlRowLabel>
-            <ControlRowValue className="text-inherit">
-              <span>{currentLabel}</span>
-            </ControlRowValue>
-          </ControlRow>
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <Select value={value} onValueChange={onValueChange}>
+      <SelectTrigger className="grid h-8 w-full grid-cols-[64px_minmax(0,1fr)_16px] items-center gap-2 rounded-md border-0 bg-transparent px-0 py-0 text-sm shadow-none outline-none select-none focus-visible:ring-0">
+        <ControlRowLabel>{label}</ControlRowLabel>
+        <ControlRowValue className="text-inherit">
+          <span>{currentLabel}</span>
+        </ControlRowValue>
+        {/* SelectTrigger 自动追加 ChevronDown，落入第 3 列（指示位），与其它行的 64px 标签列对齐 */}
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((item) => (
+          <SelectItem key={item.value} value={item.value}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -552,7 +549,7 @@ export function CompactColorRow({
           <Input
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-1"
+            className="border-input bg-background shadow-1 h-9 rounded-md border px-3 text-sm"
           />
         </div>
       </Collapse>

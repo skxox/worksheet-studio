@@ -57,7 +57,7 @@ function MarginEditor({
               step={1}
               value={margin[key]}
               onChange={(e) => updateMargin(key, Number(e.target.value))}
-              className="border-input bg-background h-9 rounded-md border px-2 text-center text-xs shadow-1"
+              className="border-input bg-background shadow-1 h-9 rounded-md border px-2 text-center text-xs"
             />
           </div>
         ))}
@@ -245,6 +245,7 @@ export function LineSettingsPanel({
   togglePanel,
   updateSetting,
   updateMargin,
+  gridOptions = [{ value: "line", label: "横线格" }],
 }: {
   settings: CopybookSettings;
   marginSummary: string;
@@ -255,13 +256,14 @@ export function LineSettingsPanel({
     value: CopybookSettings[K],
   ) => void;
   updateMargin: (key: keyof Margin, value: number) => void;
+  gridOptions?: { value: string; label: string }[];
 }) {
   return (
     <PanelCard>
       <CompactSelectRow
         label="方格类型"
         value={settings.gridType}
-        options={[{ value: "essay", label: "横线格" }]}
+        options={gridOptions}
         onValueChange={(value) => updateSetting("gridType", value as GridType)}
       />
       <CompactSliderRow
@@ -282,15 +284,17 @@ export function LineSettingsPanel({
         step={1}
         onChange={(value) => updateSetting("lineSpacing", value)}
       />
-      <CompactSliderRow
-        label="行间距"
-        value={settings.rowGap}
-        unit="mm"
-        min={0}
-        max={10}
-        step={0.5}
-        onChange={(value) => updateSetting("rowGap", value)}
-      />
+      {settings.gridType !== "line" && (
+        <CompactSliderRow
+          label="行间距"
+          value={settings.rowGap}
+          unit="mm"
+          min={0}
+          max={10}
+          step={0.5}
+          onChange={(value) => updateSetting("rowGap", value)}
+        />
+      )}
       <ExpandableTriggerRow
         label="页边距"
         value={marginSummary}

@@ -1,6 +1,7 @@
 "use client";
 
 import { getCopybookCapabilities } from "../../../copybook-metadata";
+import { PARAGRAPH_GRID_TYPES } from "../../../copybook-config";
 import {
   FontSettingsPanel,
   LineSettingsPanel,
@@ -43,6 +44,12 @@ export function LineSidebarSections({
         togglePanel={togglePanel}
         updateSetting={updateSetting}
         updateMargin={updateMargin}
+        // 篇章誊写可选多种方格；英文句段只保留横线格
+        gridOptions={
+          type === "paragraph"
+            ? PARAGRAPH_GRID_TYPES
+            : [{ value: "line", label: "横线格" }]
+        }
       />
 
       <FontSettingsPanel
@@ -51,7 +58,8 @@ export function LineSidebarSections({
         onCustomLocalFontChange={onCustomLocalFontChange}
         onApplyCustomLocalFont={onApplyCustomLocalFont}
         updateSetting={updateSetting}
-        mode="line"
+        // 篇章誊写字号用「字体大小 % + 上下偏移 %」（同方格模式）；英文句段保留 px 字号
+        mode={type === "paragraph" ? "grid" : "line"}
       />
     </>
   );
