@@ -32,8 +32,12 @@
     ]
   },
   "dependencies": {
+    "@fontsource/liu-jian-mao-cao": "^5.3.0",
     "@fontsource/long-cang": "^5.2.8",
     "@fontsource/ma-shan-zheng": "^5.2.9",
+    "@fontsource/noto-sans-sc": "^5.3.1",
+    "@fontsource/noto-serif-sc": "^5.3.1",
+    "@fontsource/zcool-xiaowei": "^5.3.0",
     "@fontsource/zhi-mang-xing": "^5.2.8",
     "@radix-ui/react-label": "^2.1.1",
     "@radix-ui/react-select": "^2.1.4",

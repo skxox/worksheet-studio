@@ -5,6 +5,11 @@ import "lxgw-wenkai-webfont/style.css";
 import "@fontsource/long-cang/400.css";
 import "@fontsource/zhi-mang-xing/400.css";
 import "@fontsource/ma-shan-zheng/400.css";
+// 宋 / 黑（Noto 思源系）与毛笔草书、站酷小薇（补齐宋/黑/毛笔草书等样式类别，均 OFL 可再分发）
+import "@fontsource/noto-serif-sc/400.css";
+import "@fontsource/noto-sans-sc/400.css";
+import "@fontsource/liu-jian-mao-cao/400.css";
+import "@fontsource/zcool-xiaowei/400.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { MotionProvider } from "@/components/common/MotionProvider";
 

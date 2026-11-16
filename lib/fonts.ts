@@ -30,13 +30,13 @@ export const FONTS: Record<string, FontOption> = {
   },
   song: {
     stack: '"Noto Serif SC", "Songti SC", "STSong", "SimSun", serif',
-    webFamily: null,
+    webFamily: "Noto Serif SC",
     label: "宋体",
   },
   hei: {
     stack:
       '"Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Heiti SC", sans-serif',
-    webFamily: null,
+    webFamily: "Noto Sans SC",
     label: "黑体",
   },
   fangsong: {
@@ -69,6 +69,16 @@ export const FONTS: Record<string, FontOption> = {
     webFamily: "Ma Shan Zheng",
     label: "马善政楷",
   },
+  liujian: {
+    stack: '"Liu Jian Mao Cao", "KaiTi", cursive',
+    webFamily: "Liu Jian Mao Cao",
+    label: "刘健毛草",
+  },
+  xiaowei: {
+    stack: '"ZCOOL XiaoWei", "KaiTi", serif',
+    webFamily: "ZCOOL XiaoWei",
+    label: "站酷小薇",
+  },
   local_kaiti: localFontOption("系统楷体", "KaiTi"),
   local_stkaiti: localFontOption("华文楷体", "STKaiti"),
   local_kaitisc: localFontOption("Kaiti SC", "Kaiti SC"),
@@ -88,6 +98,18 @@ export const FONTS: Record<string, FontOption> = {
   local_pangzhonghua_xing: localFontOption("庞中华行书", "庞中华行书"),
   local_sima_yanxing: localFontOption("司马彦行书", "司马彦行书"),
   local_guzhongan_xing: localFontOption("顾仲安行书", "顾仲安行书"),
+  // 以下为常见字帖字体名目（15 款）：均为「引用本机已装字体」的直通项——
+  // 不随项目分发字体文件（商业字体仅限个人本机使用）。
+  local_pinru: localFontOption("品如手写体", "品如手写体"),
+  local_huangkaihua: localFontOption("黄凯桦手写体", "黄凯桦手写体"),
+  local_zhongqi_maoacao: localFontOption("钟齐流江毛草", "钟齐流江毛草"),
+  local_jingboran: localFontOption("井柏然手写体", "井柏然手写体"),
+  local_moda: localFontOption("莫大毛筆字體", "莫大毛筆字體"),
+  local_zhengfeng: localFontOption("正風毛筆字體", "正風毛筆字體"),
+  local_tamanegi: localFontOption("玉ねぎ楷書", "玉ねぎ楷書"),
+  local_jingxiaopeng: localFontOption("荆霄鹏楷书", "荆霄鹏楷书"),
+  local_wuyusheng: localFontOption("吴玉生行书", "吴玉生行书"),
+  local_luzhongnan: localFontOption("卢中南毛筆小楷", "卢中南毛筆小楷"),
 };
 
 export const COMMON_FONT_KEYS = [
@@ -100,6 +122,8 @@ export const COMMON_FONT_KEYS = [
   "mashan",
   "longcang",
   "zhimang",
+  "liujian",
+  "xiaowei",
 ] as const;
 
 export const LOCAL_FONT_KEYS = [
@@ -122,6 +146,16 @@ export const LOCAL_FONT_KEYS = [
   "local_pangzhonghua_xing",
   "local_sima_yanxing",
   "local_guzhongan_xing",
+  "local_pinru",
+  "local_huangkaihua",
+  "local_zhongqi_maoacao",
+  "local_jingboran",
+  "local_moda",
+  "local_zhengfeng",
+  "local_tamanegi",
+  "local_jingxiaopeng",
+  "local_wuyusheng",
+  "local_luzhongnan",
 ] as const;
 
 function customLocalFamily(key: string): string | null {

@@ -31,10 +31,15 @@ describe("fontWebFamily", () => {
   it("returns the web family name for web fonts", () => {
     expect(fontWebFamily("wenkai")).toBe("LXGW WenKai");
     expect(fontWebFamily("longcang")).toBe("Long Cang");
+    // 宋 / 黑升级为 Noto 自托管 Web 字体（思源系，跨设备一致渲染）
+    expect(fontWebFamily("song")).toBe("Noto Serif SC");
+    expect(fontWebFamily("hei")).toBe("Noto Sans SC");
+    expect(fontWebFamily("liujian")).toBe("Liu Jian Mao Cao");
+    expect(fontWebFamily("xiaowei")).toBe("ZCOOL XiaoWei");
   });
   it("returns null for system-only fonts", () => {
-    expect(fontWebFamily("song")).toBeNull();
-    expect(fontWebFamily("hei")).toBeNull();
+    expect(fontWebFamily("fangsong")).toBeNull();
+    expect(fontWebFamily("lishu")).toBeNull();
   });
   it("returns null for custom local: families", () => {
     expect(fontWebFamily("local:MyHandwriting")).toBeNull();
