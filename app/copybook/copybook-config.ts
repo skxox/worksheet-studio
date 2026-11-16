@@ -1,7 +1,12 @@
 import { fontLabel, fontStack, COMMON_FONT_KEYS } from "@/lib/fonts";
 import { STROKE_CHAR_TO_PATTERN } from "@/lib/copybook";
 import { PAPER_SIZES } from "@/lib/paper";
-import type { CopybookSettings, CopybookType, GridType } from "@/types";
+import {
+  ControlTraceWeight,
+  type CopybookSettings,
+  type CopybookType,
+  type GridType,
+} from "@/types";
 export {
   COPYBOOK_TYPE_GROUPS,
   COPYBOOK_TYPES,
@@ -66,13 +71,13 @@ export const DEFAULT_CONTENT: Record<CopybookType, string> = {
   character: "你好世界",
   word: "春暖花开 阳光明媚",
   paragraph: "床前明月光，疑是地上霜。\n举头望明月，低头思故乡。",
-  pinyin: "春夏秋冬",
+  pinyin: "a\no\ne\ni\nu\nü\nā á ǎ à\nnǐ\nwǒ",
   stroke: "",
-  "english-char": "AaBbCcDd",
-  "english-word": "hello world",
+  "english-char": "ABCDEFGH",
+  "english-word": "Lily\n\nbook, pencil, ruler, bag",
   "english-para": "The quick brown fox jumps over the lazy dog.",
   number: "1\n2\n3\n4\n5\n6\n7\n8\n9\n0\n\n1234567890",
-  control: "",
+  control: "123456",
 };
 
 export const CONTENT_PLACEHOLDERS: Record<CopybookType, string> = {
@@ -80,12 +85,12 @@ export const CONTENT_PLACEHOLDERS: Record<CopybookType, string> = {
   word: "输入词语，用空格或换行分隔，例如：春暖花开 岁月静好",
   paragraph: "输入诗词、课文或句段内容，支持换行排版",
   stroke: "点击「编辑」选择要练习的笔画，并挑选包含该笔画的例字",
-  pinyin: "输入要练习的汉字，系统会按拼音字帖方式生成",
-  "english-char": "输入字母序列，例如：Aa Bb Cc Dd",
-  "english-word": "输入英文单词，例如：hello world future design",
+  pinyin: "输入要练习的拼音，每行一组；可使用声调韵母快捷输入",
+  "english-char": "输入英文字母，例如：ABC；可选择大小写成对练习",
+  "english-word": "输入英文单词，用换行或逗号分隔，例如：book, pencil, ruler",
   "english-para": "输入英文句子或段落，支持自动换行",
   number: "请输入数字，可按单行单个数字或整行数字序列输入",
-  control: "",
+  control: "输入图案序列，或点击下方 1–9、A–W 添加图案",
 };
 
 export interface StrokeDraftRow {
@@ -155,30 +160,36 @@ export function createDefaultSettings(
   type: CopybookType = "character",
 ): CopybookSettings {
   const isNumber = type === "number";
+  const isEnglishGrid = type === "english-char" || type === "english-word";
+  const isPinyin = type === "pinyin";
   const isLineTemplate = type === "paragraph" || type === "english-para";
+  const isControl = type === "control";
   return {
     type,
     content: DEFAULT_CONTENT[type],
-    fontFamily: "kaiti",
+    fontFamily: isPinyin ? "hei" : "kaiti",
     fontWeight: "normal",
     gridType: isLineTemplate ? "line" : "tian",
     gridSize: 10,
-    rowGap: 2,
+    rowGap: isControl ? 0 : 2,
     margin: { top: 36, right: 36, bottom: 36, left: 36 },
-    fontScale: isNumber ? 85 : 68,
+    fontScale: isPinyin ? 60 : isNumber || isEnglishGrid ? 85 : 68,
     fontSize: 28,
-    vOffset: isNumber ? 20 : 0,
+    vOffset: isPinyin ? -12 : 0,
     renderMode: "miao",
     solidCount: 20,
     groupSpacing: 4,
     miaoColor: "#94a3b8",
-    lineColor: "#98a5b9",
+    // 主流字帖线色（slate-500）：实线外框全色，虚线辅助线在绘制层再加 50% 透明度
+    lineColor: "#64748b",
     color: "#1f2937",
     highlightColor: "#1f2937",
     showPinyin: false,
     showStroke: false,
     highlightFirst: true,
     highlightCount: 1,
+    pairLetterCase: false,
+    controlTraceWeight: ControlTraceWeight.Bold,
     insertEmptyRow: false,
     insertEmptyCol: false,
     pinyinOverrides: {},

@@ -4,6 +4,7 @@ import { getCopybookCapabilities } from "../../../copybook-metadata";
 import {
   FontSettingsPanel,
   GridSettingsPanel,
+  PracticeRowSettingsPanel,
   RenderModeSettingsPanel,
   ToggleSettingsPanel,
 } from "../../panels/copybook-settings-panels";
@@ -30,6 +31,7 @@ export function GridSidebarSections({
           showStrokeSwitch={capabilities.showStrokeSwitch}
           showPinyinToggle={capabilities.showPinyinToggle}
           showHighlightToggle={capabilities.showHighlightToggle}
+          showLetterCasePair={capabilities.showLetterCasePair}
           showInsertEmptyRow={capabilities.showInsertEmptyRow}
           showInsertEmptyCol={capabilities.showInsertEmptyCol}
           settings={settings}
@@ -45,6 +47,21 @@ export function GridSidebarSections({
           togglePanel={togglePanel}
           updateSetting={updateSetting}
           updateMargin={updateMargin}
+        />
+      ) : null}
+
+      {capabilities.showEnglishGridControls ||
+      capabilities.showPinyinGridControls ? (
+        <PracticeRowSettingsPanel
+          settings={settings}
+          marginSummary={marginSummary}
+          expandedPanel={expandedPanel}
+          togglePanel={togglePanel}
+          updateSetting={updateSetting}
+          updateMargin={updateMargin}
+          gridLabel={
+            capabilities.showEnglishGridControls ? "四线格" : undefined
+          }
         />
       ) : null}
 

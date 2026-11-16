@@ -8,6 +8,7 @@ import type {
   Margin,
   PaperSize,
 } from "@/types";
+import { ControlTraceWeight } from "@/types";
 import {
   getCopybookCapabilities,
   type CopybookTemplateCapabilities,
@@ -141,6 +142,11 @@ export function sanitizeCopybookSettings(
     ),
     insertEmptyRow: settings.insertEmptyRow === true,
     insertEmptyCol: settings.insertEmptyCol === true,
+    pairLetterCase: settings.pairLetterCase === true,
+    controlTraceWeight:
+      settings.controlTraceWeight === ControlTraceWeight.Normal
+        ? ControlTraceWeight.Normal
+        : ControlTraceWeight.Bold,
     pinyinOverrides: resolvePinyinOverrides(settings.pinyinOverrides),
     lineSpacing: clamp(
       toFiniteNumber(settings.lineSpacing, initialSettings.lineSpacing),

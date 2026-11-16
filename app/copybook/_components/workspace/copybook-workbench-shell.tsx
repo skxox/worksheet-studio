@@ -2,12 +2,15 @@
 
 import React, {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
 } from "react";
-import { Check, Download, Printer } from "lucide-react";
+import { Check, Download } from "lucide-react";
+import { PreviewCanvas } from "@/components/common/PreviewCanvas";
+import { SettingsPanel } from "@/components/common/SettingsPanel";
+import { PrintCanvasButton } from "@/components/workspace/PrintCanvasButton";
 import { Button } from "@/components/ui/button";
 import { useCanvas } from "@/hooks/useCanvas";
 import { useExport } from "@/hooks/useExport";
@@ -50,10 +53,41 @@ export function CopybookWorkbenchShell({
     () => createDefaultSettings(initialType),
     [initialType],
   );
+  const settingsStorageKey = `ws:copybook:${initialType}`;
   const [settings, setSettings] = usePersistentState<CopybookSettings>(
-    `ws:copybook:${initialType}`,
+    settingsStorageKey,
     initialSettings,
   );
+  // #region debug-point A:workbench-client-mount
+  useEffect(() => {}, [initialType]);
+  // #endregion
+  useEffect(() => {
+    if (initialType !== "number") return;
+
+    const migrationKey = `${settingsStorageKey}:center-offset-v1`;
+    try {
+      if (localStorage.getItem(migrationKey)) return;
+
+      const storedSettings = localStorage.getItem(settingsStorageKey);
+      if (storedSettings) {
+        const parsed = JSON.parse(storedSettings) as Partial<CopybookSettings>;
+        const hasLegacyNumberDefaults =
+          parsed.vOffset === 20 &&
+          parsed.fontScale === 85 &&
+          parsed.fontSize === 28 &&
+          parsed.gridSize === 10 &&
+          parsed.rowGap === 2;
+        if (hasLegacyNumberDefaults) {
+          setSettings((current) =>
+            current.vOffset === 20 ? { ...current, vOffset: 0 } : current,
+          );
+        }
+      }
+      localStorage.setItem(migrationKey, "1");
+    } catch {
+      /* Keep the current settings if storage is unavailable. */
+    }
+  }, [initialType, setSettings, settingsStorageKey]);
   const safeSettings = useMemo<CopybookSettings>(
     () =>
       sanitizeCopybookSettings(
@@ -145,18 +179,6 @@ export function CopybookWorkbenchShell({
     setExpandedPanel((prev) => (prev === panel ? null : panel));
   };
 
-  const handlePrint = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const url = canvas.toDataURL("image/png");
-    const w = window.open("", "_blank", "width=900,height=1200");
-    if (!w) return;
-    w.document.write(
-      `<html><head><title>打印字帖</title><style>body{margin:0;display:flex;justify-content:center}img{max-width:100%}</style></head><body><img src="${url}" onload="window.focus();window.print()"/></body></html>`,
-    );
-    w.document.close();
-  };
-
   // 把鼠标坐标换算成画布逻辑坐标（兼容 HiDPI / CSS 缩放）
   const eventToCanvasPoint = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -176,10 +198,15 @@ export function CopybookWorkbenchShell({
   // 点击多音字按钮 → 在按钮下方弹出读音下拉框
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const p = eventToCanvasPoint(e);
-    if (!p) return;
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!p || !rect) return;
     const hit = hitTestToggle(p);
     if (!hit) return;
-    setPinyinMenu({ char: hit.char, left: hit.x, top: hit.y + hit.h });
+    setPinyinMenu({
+      char: hit.char,
+      left: rect.left + (hit.x / canvasSize.width) * rect.width,
+      top: rect.top + ((hit.y + hit.h) / canvasSize.height) * rect.height,
+    });
   };
 
   // 从下拉框里选定某字的一个读音
@@ -224,141 +251,125 @@ export function CopybookWorkbenchShell({
   const ContentModal = template.ContentModal;
 
   return (
-    <main
-      className="bg-muted/40 relative"
-      style={{ minHeight: "calc(-122px + 100vh)" }}
-    >
-      <div
-        className="print-out container mx-auto flex w-full max-w-(--content-width) flex-col gap-3 pt-5"
-        style={{ "--content-width": "1400px" } as CSSProperties}
-      >
-        <CopybookMobileTypeBar groups={COPYBOOK_TYPE_GROUPS} currentType={t} />
-        <div className="flex w-full gap-4">
+    <main className="bg-muted/40 flex min-h-0 flex-1 overflow-hidden">
+      <section className="flex min-w-0 flex-1 flex-col">
+        <div className="print-none shrink-0">
           <CopybookLeftNav groups={COPYBOOK_TYPE_GROUPS} currentType={t} />
-
-          <section className="relative flex flex-1 justify-center">
-            <div
-              className="relative"
-              style={{
-                minWidth: `${canvasSize.width}px`,
-                minHeight: `${canvasSize.height}px`,
-              }}
-            >
-              <div
-                id="print-body"
-                className="pointer-events-none"
-                style={{
-                  minWidth: `${canvasSize.width}px`,
-                  minHeight: `${canvasSize.height}px`,
-                }}
-              >
-                <canvas
-                  ref={canvasRef}
-                  id="paper-canvas-0"
-                  className="paper-canvas print-page shadow-paper rounded-sm ring-1 ring-black/5"
-                  style={{
-                    width: `${canvasSize.width}px`,
-                    height: `${canvasSize.height}px`,
-                    // 父级 #print-body 为 pointer-events:none，此处放开以接收多音字切换点击
-                    pointerEvents: "auto",
-                  }}
-                  onClick={handleCanvasClick}
-                  onMouseMove={handleCanvasMove}
-                />
-              </div>
-              {pinyinMenu && (
-                <>
-                  {/* 点击外部关闭 */}
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setPinyinMenu(null)}
-                    aria-hidden
-                  />
-                  {/* 读音下拉框：相对画布定位，随页面滚动 */}
-                  <div
-                    role="listbox"
-                    aria-label={`${pinyinMenu.char} 的读音`}
-                    className="border-input bg-background absolute z-50 min-w-28 overflow-hidden rounded-md border p-1 shadow-lg"
-                    style={{ left: pinyinMenu.left, top: pinyinMenu.top }}
-                  >
-                    {pinyinReadings.map((py, i) => (
-                      <button
-                        key={py + i}
-                        type="button"
-                        role="option"
-                        aria-selected={i === pinyinCurrent}
-                        onClick={() => pickPinyin(pinyinMenu.char, i)}
-                        className={`hover:bg-accent flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-left text-sm transition-colors ${
-                          i === pinyinCurrent
-                            ? "bg-accent/60 text-foreground font-medium"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        <span>{py}</span>
-                        {i === pinyinCurrent && (
-                          <Check className="text-primary h-3.5 w-3.5" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </section>
-
-          <aside className="glass-strong sticky top-16 flex max-h-[calc(100vh-80px)] w-58 min-w-50 shrink-0 flex-col gap-2 overflow-y-auto rounded-2xl p-2">
-            <div className="flex gap-2">
-              <Button
-                onClick={() =>
-                  exportPDF(
-                    canvasRef.current,
-                    "copybook.pdf",
-                    safeSettings.paperSize,
-                  )
-                }
-                variant="outline"
-                className="bg-background hover:bg-accent hover:text-accent-foreground shadow-1 inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium whitespace-nowrap transition-all"
-              >
-                <Download className="h-4 w-4" />导 出
-              </Button>
-              <Button
-                onClick={handlePrint}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-1 inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap transition-all"
-              >
-                <Printer className="h-4 w-4" />打 印
-              </Button>
-            </div>
-
-            {ContentCard ? (
-              <ContentCard
-                type={t}
-                label={activeLabel}
-                content={template.getCardContent(
-                  safeSettings.content,
-                  contentPreview,
-                )}
-                placeholder={CONTENT_PLACEHOLDERS[t]}
-                onEdit={openContentEditor}
-              />
-            ) : null}
-
-            {Sidebar ? (
-              <Sidebar
-                type={t}
-                settings={safeSettings}
-                marginSummary={marginSummary}
-                expandedPanel={expandedPanel}
-                togglePanel={togglePanel}
-                updateSetting={updateSetting}
-                updateMargin={updateMargin}
-                customLocalFont={customLocalFont}
-                onCustomLocalFontChange={setCustomLocalFont}
-                onApplyCustomLocalFont={applyCustomLocalFont}
-              />
-            ) : null}
-          </aside>
+          <CopybookMobileTypeBar
+            groups={COPYBOOK_TYPE_GROUPS}
+            currentType={t}
+            className="px-4 pt-3"
+          />
         </div>
-      </div>
+        <PreviewCanvas
+          canvasRef={canvasRef}
+          className="p-4 sm:p-6"
+          canvasProps={{
+            id: "paper-canvas-0",
+            className: "paper-canvas print-page",
+            onClick: handleCanvasClick,
+            onMouseMove: handleCanvasMove,
+          }}
+        />
+
+        {pinyinMenu ? (
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setPinyinMenu(null)}
+              aria-hidden
+            />
+            <div
+              role="listbox"
+              aria-label={`${pinyinMenu.char} 的读音`}
+              className="border-input bg-background fixed z-50 min-w-28 overflow-hidden rounded-md border p-1 shadow-lg"
+              style={{ left: pinyinMenu.left, top: pinyinMenu.top }}
+            >
+              {pinyinReadings.map((py, i) => (
+                <button
+                  key={py + i}
+                  type="button"
+                  role="option"
+                  aria-selected={i === pinyinCurrent}
+                  onClick={() => pickPinyin(pinyinMenu.char, i)}
+                  className={`hover:bg-accent flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-left text-sm transition-colors ${
+                    i === pinyinCurrent
+                      ? "bg-accent/60 text-foreground font-medium"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <span>{py}</span>
+                  {i === pinyinCurrent ? (
+                    <Check className="text-primary h-3.5 w-3.5" />
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </>
+        ) : null}
+      </section>
+
+      <SettingsPanel>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-display-sm truncate">{activeLabel}</h1>
+          <span className="text-muted-foreground shrink-0 text-xs">
+            字帖工坊
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            onClick={() =>
+              exportPDF(
+                canvasRef.current,
+                "copybook.pdf",
+                safeSettings.paperSize,
+              )
+            }
+            variant="outline"
+            className="flex-1"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            PDF
+          </Button>
+          <PrintCanvasButton
+            canvasRef={canvasRef}
+            title="打印字帖"
+            variant="default"
+            className="flex-1"
+          />
+        </div>
+
+        {ContentCard ? (
+          <ContentCard
+            type={t}
+            label={activeLabel}
+            content={template.getCardContent(
+              safeSettings.content,
+              contentPreview,
+            )}
+            placeholder={CONTENT_PLACEHOLDERS[t]}
+            onEdit={openContentEditor}
+            onContentChange={(value) => {
+              updateSetting("content", value);
+            }}
+          />
+        ) : null}
+
+        {Sidebar ? (
+          <Sidebar
+            type={t}
+            settings={safeSettings}
+            marginSummary={marginSummary}
+            expandedPanel={expandedPanel}
+            togglePanel={togglePanel}
+            updateSetting={updateSetting}
+            updateMargin={updateMargin}
+            customLocalFont={customLocalFont}
+            onCustomLocalFontChange={setCustomLocalFont}
+            onApplyCustomLocalFont={applyCustomLocalFont}
+          />
+        ) : null}
+      </SettingsPanel>
 
       {ContentModal ? (
         <ContentModal

@@ -18,11 +18,15 @@ export interface CopybookTemplateCapabilities {
   showStrokeSwitch: boolean;
   showSwitchPanel: boolean;
   fontPanelMode: FontPanelMode;
+  showLetterCasePair?: boolean;
+  showEnglishGridControls?: boolean;
+  showPinyinGridControls?: boolean;
 }
 
 export interface CopybookTemplateOption {
   value: CopybookType;
   label: string;
+  description?: string;
 }
 
 export interface CopybookTemplateGroup {
@@ -100,17 +104,18 @@ const TEMPLATE_CAPABILITIES = {
   pinyin: {
     isNumberMode: false,
     isStrokeMode: false,
-    showGridControls: true,
-    showHighlightToggle: false,
+    showGridControls: false,
+    showHighlightToggle: true,
     showInsertEmptyCol: false,
-    showInsertEmptyRow: false,
+    showInsertEmptyRow: true,
     showLineControls: false,
     showPinyinToggle: false,
     showRenderModePanel: true,
     showStrokeControls: false,
     showStrokeSwitch: false,
-    showSwitchPanel: false,
+    showSwitchPanel: true,
     fontPanelMode: "grid",
+    showPinyinGridControls: true,
   },
   "english-char": {
     isNumberMode: false,
@@ -118,7 +123,7 @@ const TEMPLATE_CAPABILITIES = {
     showGridControls: false,
     showHighlightToggle: true,
     showInsertEmptyCol: false,
-    showInsertEmptyRow: false,
+    showInsertEmptyRow: true,
     showLineControls: false,
     showPinyinToggle: false,
     showRenderModePanel: true,
@@ -126,6 +131,8 @@ const TEMPLATE_CAPABILITIES = {
     showStrokeSwitch: false,
     showSwitchPanel: true,
     fontPanelMode: "english-grid",
+    showLetterCasePair: true,
+    showEnglishGridControls: true,
   },
   "english-word": {
     isNumberMode: false,
@@ -141,6 +148,7 @@ const TEMPLATE_CAPABILITIES = {
     showStrokeSwitch: false,
     showSwitchPanel: true,
     fontPanelMode: "english-grid",
+    showEnglishGridControls: true,
   },
   "english-para": {
     isNumberMode: false,
@@ -194,28 +202,68 @@ export const COPYBOOK_TYPE_GROUPS: CopybookTemplateGroup[] = [
     key: "cn",
     label: "语文书写",
     options: [
-      { value: "character", label: "单字临写" },
-      { value: "word", label: "词语书写" },
-      { value: "paragraph", label: "篇章誊写" },
-      { value: "stroke", label: "笔顺拆解" },
+      {
+        value: "character",
+        label: "单字临写",
+        description: "逐字练写，打牢书写基本功",
+      },
+      {
+        value: "word",
+        label: "词语书写",
+        description: "边写边记，练字识词两不误",
+      },
+      {
+        value: "paragraph",
+        label: "篇章誊写",
+        description: "粘贴任意文本，即刻生成字帖",
+      },
+      {
+        value: "stroke",
+        label: "笔顺拆解",
+        description: "横竖撇捺，从零开始",
+      },
     ],
   },
   {
     key: "en",
     label: "英文书写",
     options: [
-      { value: "english-char", label: "字母训练" },
-      { value: "english-word", label: "单词抄写" },
-      { value: "english-para", label: "句段誊写" },
+      {
+        value: "english-char",
+        label: "字母训练",
+        description: "逐个练写，养成规范笔顺",
+      },
+      {
+        value: "english-word",
+        label: "单词抄写",
+        description: "练字兼顾记词，一举两得",
+      },
+      {
+        value: "english-para",
+        label: "句段誊写",
+        description: "整段书写，提升流畅度与速度",
+      },
     ],
   },
   {
     key: "skill",
     label: "专项练习",
     options: [
-      { value: "number", label: "数字书写" },
-      { value: "pinyin", label: "拼音拼写" },
-      { value: "control", label: "控笔线练" },
+      {
+        value: "number",
+        label: "数字书写",
+        description: "数字规范书写",
+      },
+      {
+        value: "pinyin",
+        label: "拼音拼写",
+        description: "点击快速输入带声调韵母",
+      },
+      {
+        value: "control",
+        label: "控笔线练",
+        description: "直线曲线，练好运笔控笔",
+      },
     ],
   },
 ];

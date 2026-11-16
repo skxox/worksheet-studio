@@ -17,7 +17,12 @@ import {
   FontPickerCard,
   PanelCard,
 } from "../primitives/copybook-controls";
-import type { CopybookSettings, GridType, Margin } from "@/types";
+import {
+  ControlTraceWeight,
+  type CopybookSettings,
+  type GridType,
+  type Margin,
+} from "@/types";
 
 export type ExpandedPanelKey =
   | null
@@ -28,7 +33,7 @@ export type ExpandedPanelKey =
   | "color"
   | "highlightColor";
 
-function MarginEditor({
+export function MarginEditor({
   margin,
   updateMargin,
 }: {
@@ -66,10 +71,105 @@ function MarginEditor({
   );
 }
 
+export function ControlSettingsPanel({
+  settings,
+  marginSummary,
+  expandedPanel,
+  togglePanel,
+  updateSetting,
+  updateMargin,
+}: {
+  settings: CopybookSettings;
+  marginSummary: string;
+  expandedPanel: ExpandedPanelKey;
+  togglePanel: (panel: Exclude<ExpandedPanelKey, null>) => void;
+  updateSetting: <K extends keyof CopybookSettings>(
+    key: K,
+    value: CopybookSettings[K],
+  ) => void;
+  updateMargin: (key: keyof Margin, value: number) => void;
+}) {
+  return (
+    <>
+      <PanelCard>
+        <CompactSliderRow
+          label="方格大小"
+          value={settings.gridSize}
+          unit="mm"
+          min={5}
+          max={20}
+          step={1}
+          onChange={(value) => updateSetting("gridSize", value)}
+        />
+        <CompactSliderRow
+          label="行间距"
+          value={settings.rowGap}
+          unit="mm"
+          min={0}
+          max={10}
+          step={0.5}
+          onChange={(value) => updateSetting("rowGap", value)}
+        />
+        <ExpandableTriggerRow
+          label="页边距"
+          value={marginSummary}
+          expanded={expandedPanel === "margin"}
+          onToggle={() => togglePanel("margin")}
+        />
+        <Collapse open={expandedPanel === "margin"}>
+          <MarginEditor margin={settings.margin} updateMargin={updateMargin} />
+        </Collapse>
+      </PanelCard>
+      <PanelCard>
+        <CompactColorRow
+          label="方格颜色"
+          value={settings.lineColor}
+          expanded={expandedPanel === "lineColor"}
+          onToggle={() => togglePanel("lineColor")}
+          onChange={(value) => updateSetting("lineColor", value)}
+        />
+        <CompactColorRow
+          label="描红颜色"
+          value={settings.miaoColor}
+          expanded={expandedPanel === "miaoColor"}
+          onToggle={() => togglePanel("miaoColor")}
+          onChange={(value) => updateSetting("miaoColor", value)}
+        />
+        <CompactSelectRow
+          label="描红粗细"
+          value={settings.controlTraceWeight}
+          options={[
+            { value: ControlTraceWeight.Normal, label: "常规" },
+            { value: ControlTraceWeight.Bold, label: "加粗" },
+          ]}
+          onValueChange={(value) =>
+            updateSetting("controlTraceWeight", value as ControlTraceWeight)
+          }
+        />
+        <CompactSliderRow
+          label="描红数量"
+          value={settings.solidCount}
+          unit=""
+          min={0}
+          max={100}
+          step={1}
+          onChange={(value) => updateSetting("solidCount", value)}
+        />
+        <CompactSwitchRow
+          label="插入空行"
+          checked={settings.insertEmptyRow}
+          onCheckedChange={(value) => updateSetting("insertEmptyRow", value)}
+        />
+      </PanelCard>
+    </>
+  );
+}
+
 export function ToggleSettingsPanel({
   showStrokeSwitch,
   showPinyinToggle,
   showHighlightToggle,
+  showLetterCasePair = false,
   showInsertEmptyRow,
   showInsertEmptyCol,
   settings,
@@ -78,6 +178,7 @@ export function ToggleSettingsPanel({
   showStrokeSwitch: boolean;
   showPinyinToggle: boolean;
   showHighlightToggle: boolean;
+  showLetterCasePair?: boolean;
   showInsertEmptyRow: boolean;
   showInsertEmptyCol: boolean;
   settings: CopybookSettings;
@@ -114,6 +215,13 @@ export function ToggleSettingsPanel({
           label="插入空行"
           checked={settings.insertEmptyRow}
           onCheckedChange={(value) => updateSetting("insertEmptyRow", value)}
+        />
+      )}
+      {showLetterCasePair && (
+        <CompactSwitchRow
+          label="大小写成对"
+          checked={settings.pairLetterCase}
+          onCheckedChange={(value) => updateSetting("pairLetterCase", value)}
         />
       )}
       {showInsertEmptyCol && (
@@ -207,6 +315,65 @@ export function NumberSettingsPanel({
 }) {
   return (
     <PanelCard>
+      <CompactSliderRow
+        label="行高"
+        value={settings.gridSize}
+        unit="mm"
+        min={8}
+        max={20}
+        step={1}
+        onChange={(value) => updateSetting("gridSize", value)}
+      />
+      <CompactSliderRow
+        label="行间距"
+        value={settings.rowGap}
+        unit="mm"
+        min={0}
+        max={10}
+        step={0.5}
+        onChange={(value) => updateSetting("rowGap", value)}
+      />
+      <ExpandableTriggerRow
+        label="页边距"
+        value={marginSummary}
+        expanded={expandedPanel === "margin"}
+        onToggle={() => togglePanel("margin")}
+      />
+      <Collapse open={expandedPanel === "margin"}>
+        <MarginEditor margin={settings.margin} updateMargin={updateMargin} />
+      </Collapse>
+    </PanelCard>
+  );
+}
+
+export function PracticeRowSettingsPanel({
+  settings,
+  marginSummary,
+  expandedPanel,
+  togglePanel,
+  updateSetting,
+  updateMargin,
+  gridLabel,
+}: {
+  settings: CopybookSettings;
+  marginSummary: string;
+  expandedPanel: ExpandedPanelKey;
+  togglePanel: (panel: Exclude<ExpandedPanelKey, null>) => void;
+  updateSetting: <K extends keyof CopybookSettings>(
+    key: K,
+    value: CopybookSettings[K],
+  ) => void;
+  updateMargin: (key: keyof Margin, value: number) => void;
+  gridLabel?: string;
+}) {
+  return (
+    <PanelCard>
+      {gridLabel ? (
+        <div className="flex h-9 items-center justify-between text-sm">
+          <span className="text-muted-foreground">方格类型</span>
+          <span>{gridLabel}</span>
+        </div>
+      ) : null}
       <CompactSliderRow
         label="行高"
         value={settings.gridSize}
@@ -347,7 +514,7 @@ export function FontSettingsPanel({
           updateSetting("fontWeight", value as CopybookSettings["fontWeight"])
         }
       />
-      {mode === "grid" && (
+      {(mode === "grid" || mode === "english-grid") && (
         <>
           <CompactSliderRow
             label="字体大小"
@@ -390,17 +557,6 @@ export function FontSettingsPanel({
             onChange={(value) => updateSetting("lineSpacing", value)}
           />
         </>
-      )}
-      {mode === "english-grid" && (
-        <CompactSliderRow
-          label="字号"
-          value={settings.fontSize}
-          unit="px"
-          min={14}
-          max={48}
-          step={1}
-          onChange={(value) => updateSetting("fontSize", value)}
-        />
       )}
     </PanelCard>
   );

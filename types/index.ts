@@ -80,6 +80,11 @@ export type GridType =
   | "huijiu" // 回九格（回宫内框 + 九宫 3×3）
   | "yuanmi"; // 圆米格（外圆 + 米字）
 
+export enum ControlTraceWeight {
+  Normal = "normal",
+  Bold = "bold",
+}
+
 export interface CopybookSettings {
   type: CopybookType;
   content: string;
@@ -111,6 +116,8 @@ export interface CopybookSettings {
   showStroke: boolean; // 显示笔顺（逐笔数据，缺失字回退字体）
   highlightFirst: boolean; // 高亮示范总开关：开启后每行前 highlightCount 个练习字作实心示范
   highlightCount: number; // 高亮示范数量：开启 highlightFirst 时，每行前 N 字作实心示范
+  pairLetterCase: boolean; // 英文字母练习中将字母转换为大小写组合
+  controlTraceWeight: ControlTraceWeight; // 控笔描红粗细
   insertEmptyRow: boolean; // 字间插入空行
   insertEmptyCol: boolean; // 字间插入空列
   pinyinOverrides: Record<string, number>; // 多音字手选读音：{ 字: 读音索引（charAllPinyins 的下标） }

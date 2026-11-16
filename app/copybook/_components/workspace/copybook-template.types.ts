@@ -30,6 +30,7 @@ export interface TemplateContentCardProps {
   content: string;
   placeholder: string;
   onEdit: () => void;
+  onContentChange?: (value: string) => void;
 }
 
 export interface TemplateModalProps {

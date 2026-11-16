@@ -11,6 +11,8 @@ import {
 } from "../../copybook-metadata";
 import { CopybookContentCard } from "../content/copybook-content-card";
 import { CopybookContentModal } from "../content/copybook-content-modal";
+import { ControlContentCard } from "../templates/control/control-content-card";
+import { ControlSidebarSections } from "../templates/control/control-sidebar-sections";
 import { GridSidebarSections } from "../templates/grid/grid-sidebar-sections";
 import { LineContentModal } from "../templates/line/line-content-modal";
 import { LineSidebarSections } from "../templates/line/line-sidebar-sections";
@@ -121,8 +123,8 @@ const STROKE_TEMPLATE: CopybookTemplateDefinition = {
 
 const CONTROL_TEMPLATE: CopybookTemplateDefinition = {
   kind: "control",
-  ContentCard: null,
-  Sidebar: null,
+  ContentCard: ControlContentCard,
+  Sidebar: ControlSidebarSections,
   ContentModal: null,
   getCardContent: (content) => content,
   getEditorState: (content) => ({
