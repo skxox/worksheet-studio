@@ -7,6 +7,7 @@ interface PreviewCanvasProps {
   /** 由 useCanvas 返回的 canvasRef；绘制在逻辑坐标系，显示由 CSS 响应式缩放 */
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   className?: string;
+  canvasProps?: Omit<React.ComponentPropsWithoutRef<"canvas">, "ref">;
 }
 
 /**
@@ -14,7 +15,17 @@ interface PreviewCanvasProps {
  * 显示层用 maxHeight/maxWidth 等比缩放到视口内，可滚动。
  * 纸张以分层柔和阴影「浮」在画布上。
  */
-export function PreviewCanvas({ canvasRef, className }: PreviewCanvasProps) {
+export function PreviewCanvas({
+  canvasRef,
+  className,
+  canvasProps,
+}: PreviewCanvasProps) {
+  const {
+    className: canvasClassName,
+    style: canvasStyle,
+    ...restCanvasProps
+  } = canvasProps ?? {};
+
   return (
     <div
       className={cn(
@@ -24,13 +35,18 @@ export function PreviewCanvas({ canvasRef, className }: PreviewCanvasProps) {
     >
       <canvas
         ref={canvasRef}
-        className="block rounded-sm bg-white shadow-paper ring-1 ring-black/5"
+        className={cn(
+          "shadow-paper block rounded-sm bg-white ring-1 ring-black/5",
+          canvasClassName,
+        )}
         style={{
           maxHeight: "calc(100vh - 7rem)",
           maxWidth: "100%",
           width: "auto",
           height: "auto",
+          ...canvasStyle,
         }}
+        {...restCanvasProps}
       />
     </div>
   );

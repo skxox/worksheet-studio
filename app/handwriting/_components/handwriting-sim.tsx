@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from "react";
 import { RotateCcw, Upload } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -15,10 +14,11 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { ExportPanel } from "@/components/common/ExportPanel";
-import { PreviewCanvas } from "@/components/common/PreviewCanvas";
 import { SettingGroup } from "@/components/common/SettingGroup";
-import { SettingsPanel } from "@/components/common/SettingsPanel";
 import { SliderRow } from "@/components/common/SliderRow";
+import { CanvasWorkspace } from "@/components/workspace/CanvasWorkspace";
+import { ColorField } from "@/components/workspace/ColorField";
+import { MarginFields } from "@/components/workspace/MarginFields";
 import { useCanvas } from "@/hooks/useCanvas";
 import { useExport } from "@/hooks/useExport";
 import { useFontLoader } from "@/hooks/useFontLoader";
@@ -164,227 +164,198 @@ export default function HandwritingSim() {
   };
 
   return (
-    <main className="flex min-h-0 flex-1 overflow-hidden">
-      <PreviewCanvas canvasRef={canvasRef} />
+    <CanvasWorkspace canvasRef={canvasRef}>
+      <h1 className="text-display-sm">手写模拟器</h1>
 
-      <SettingsPanel>
-        <h1 className="text-display-sm">手写模拟器</h1>
+      <ExportPanel
+        onPDF={() =>
+          exportPDF(exportHiRes(2), "handwriting.pdf", settings.paperSize)
+        }
+        onPNG={() => exportPNG(exportHiRes(2), "handwriting.png")}
+      />
 
-        <ExportPanel
-          onPDF={() =>
-            exportPDF(exportHiRes(2), "handwriting.pdf", settings.paperSize)
-          }
-          onPNG={() => exportPNG(exportHiRes(2), "handwriting.png")}
-        />
+      <Button onClick={regenerate} variant="secondary" className="w-full">
+        <RotateCcw className="mr-2 h-4 w-4" />
+        重新生成（换随机种子）
+      </Button>
 
-        <Button onClick={regenerate} variant="secondary" className="w-full">
-          <RotateCcw className="mr-2 h-4 w-4" />
-          重新生成（换随机种子）
-        </Button>
+      <Separator />
 
-        <Separator />
+      <SettingGroup title="内容">
+        <div className="space-y-2">
+          <Label>输入内容</Label>
+          <Textarea
+            value={settings.content}
+            onChange={(e) => updateSetting("content", e.target.value)}
+            rows={6}
+            placeholder="粘贴任意文本..."
+          />
+        </div>
 
-        <SettingGroup title="内容">
-          <div className="space-y-2">
-            <Label>输入内容</Label>
-            <Textarea
-              value={settings.content}
-              onChange={(e) => updateSetting("content", e.target.value)}
-              rows={6}
-              placeholder="粘贴任意文本..."
+        <div className="space-y-2">
+          <Label>从文件导入（.txt / .docx / .pdf / 图片）</Label>
+          <label className="border-input text-muted-foreground hover:bg-accent flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm">
+            <Upload className="h-4 w-4" />
+            {ocrBusy ? "识别中…（首次需下载识别库，较慢）" : "选择文件"}
+            <input
+              type="file"
+              accept=".txt,.docx,.pdf,text/plain,image/*"
+              className="hidden"
+              disabled={ocrBusy}
+              onChange={(e) => handleFile(e.target.files?.[0])}
             />
-          </div>
+          </label>
+        </div>
 
-          <div className="space-y-2">
-            <Label>从文件导入（.txt / .docx / .pdf / 图片）</Label>
-            <label className="border-input text-muted-foreground hover:bg-accent flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm">
-              <Upload className="h-4 w-4" />
-              {ocrBusy ? "识别中…（首次需下载识别库，较慢）" : "选择文件"}
-              <input
-                type="file"
-                accept=".txt,.docx,.pdf,text/plain,image/*"
-                className="hidden"
-                disabled={ocrBusy}
-                onChange={(e) => handleFile(e.target.files?.[0])}
-              />
-            </label>
-          </div>
+        <div className="space-y-2">
+          <Label>手写字体</Label>
+          <Select
+            value={settings.fontFamily}
+            onValueChange={(v) => updateSetting("fontFamily", v)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {HANDWRITING_FONTS.map((key) => (
+                <SelectItem key={key} value={key}>
+                  {FONTS[key].label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-          <div className="space-y-2">
-            <Label>手写字体</Label>
-            <Select
-              value={settings.fontFamily}
-              onValueChange={(v) => updateSetting("fontFamily", v)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {HANDWRITING_FONTS.map((key) => (
-                  <SelectItem key={key} value={key}>
-                    {FONTS[key].label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-2">
+          <Label>纸张背景</Label>
+          <Select
+            value={settings.paperBackground}
+            onValueChange={(v) =>
+              updateSetting(
+                "paperBackground",
+                v as HandwritingSettings["paperBackground"],
+              )
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAPER_BACKGROUNDS.map((b) => (
+                <SelectItem key={b.value} value={b.value}>
+                  {b.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </SettingGroup>
 
-          <div className="space-y-2">
-            <Label>纸张背景</Label>
-            <Select
-              value={settings.paperBackground}
-              onValueChange={(v) =>
-                updateSetting(
-                  "paperBackground",
-                  v as HandwritingSettings["paperBackground"],
-                )
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PAPER_BACKGROUNDS.map((b) => (
-                  <SelectItem key={b.value} value={b.value}>
-                    {b.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </SettingGroup>
+      <SettingGroup title="手写效果">
+        <SliderRow
+          label="字形变形"
+          value={settings.distortionLevel}
+          onChange={(v) => updateSetting("distortionLevel", v)}
+          minLabel="端正"
+          maxLabel="变形"
+          recommend={8}
+        />
+        <SliderRow
+          label="位置凌乱"
+          value={settings.positionChaos}
+          onChange={(v) => updateSetting("positionChaos", v)}
+          minLabel="整齐"
+          maxLabel="凌乱"
+          recommend={10}
+        />
+        <SliderRow
+          label="笔画凌乱"
+          value={settings.strokeChaos}
+          onChange={(v) => updateSetting("strokeChaos", v)}
+          minLabel="工整"
+          maxLabel="歪扭"
+          recommend={5}
+        />
+        <SliderRow
+          label="涂改概率"
+          value={settings.scribbleRate}
+          onChange={(v) => updateSetting("scribbleRate", v)}
+          minLabel="无瑕"
+          maxLabel="涂改"
+          recommend={3}
+        />
+      </SettingGroup>
 
-        <SettingGroup title="手写效果">
-          <SliderRow
-            label="字形变形"
-            value={settings.distortionLevel}
-            onChange={(v) => updateSetting("distortionLevel", v)}
-            minLabel="端正"
-            maxLabel="变形"
-            recommend={8}
-          />
-          <SliderRow
-            label="位置凌乱"
-            value={settings.positionChaos}
-            onChange={(v) => updateSetting("positionChaos", v)}
-            minLabel="整齐"
-            maxLabel="凌乱"
-            recommend={10}
-          />
-          <SliderRow
-            label="笔画凌乱"
-            value={settings.strokeChaos}
-            onChange={(v) => updateSetting("strokeChaos", v)}
-            minLabel="工整"
-            maxLabel="歪扭"
-            recommend={5}
-          />
-          <SliderRow
-            label="涂改概率"
-            value={settings.scribbleRate}
-            onChange={(v) => updateSetting("scribbleRate", v)}
-            minLabel="无瑕"
-            maxLabel="涂改"
-            recommend={3}
-          />
-        </SettingGroup>
+      <SettingGroup title="排版">
+        <SliderRow
+          label="字号"
+          value={settings.fontSize}
+          onChange={(v) => updateSetting("fontSize", v)}
+          min={12}
+          max={60}
+          step={1}
+          unit="px"
+        />
+        <SliderRow
+          label="行距"
+          value={settings.lineSpacing}
+          onChange={(v) => updateSetting("lineSpacing", v)}
+          min={20}
+          max={80}
+          step={1}
+          unit="px"
+        />
+        <SliderRow
+          label="字间距"
+          value={settings.letterSpacing}
+          onChange={(v) => updateSetting("letterSpacing", v)}
+          min={0}
+          max={20}
+          step={0.5}
+          unit="px"
+          recommend={2}
+        />
+        <SliderRow
+          label="每行字数"
+          value={settings.cols}
+          onChange={(v) => updateSetting("cols", v)}
+          min={0}
+          max={30}
+          step={1}
+          unit="字"
+          recommend={0}
+        />
+        <ColorField
+          label="墨色"
+          value={settings.inkColor}
+          onChange={(value) => updateSetting("inkColor", value)}
+        />
+      </SettingGroup>
 
-        <SettingGroup title="排版">
-          <SliderRow
-            label="字号"
-            value={settings.fontSize}
-            onChange={(v) => updateSetting("fontSize", v)}
-            min={12}
-            max={60}
-            step={1}
-            unit="px"
-          />
-          <SliderRow
-            label="行距"
-            value={settings.lineSpacing}
-            onChange={(v) => updateSetting("lineSpacing", v)}
-            min={20}
-            max={80}
-            step={1}
-            unit="px"
-          />
-          <SliderRow
-            label="字间距"
-            value={settings.letterSpacing}
-            onChange={(v) => updateSetting("letterSpacing", v)}
-            min={0}
-            max={20}
-            step={0.5}
-            unit="px"
-            recommend={2}
-          />
-          <SliderRow
-            label="每行字数"
-            value={settings.cols}
-            onChange={(v) => updateSetting("cols", v)}
-            min={0}
-            max={30}
-            step={1}
-            unit="字"
-            recommend={0}
-          />
-          <div className="space-y-2">
-            <Label>墨色</Label>
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                value={settings.inkColor}
-                onChange={(e) => updateSetting("inkColor", e.target.value)}
-                className="border-input h-9 w-12 cursor-pointer rounded-md border bg-transparent"
-              />
-              <Input
-                value={settings.inkColor}
-                onChange={(e) => updateSetting("inkColor", e.target.value)}
-              />
-            </div>
-          </div>
-        </SettingGroup>
-
-        <SettingGroup title="纸张与边距">
-          <div className="space-y-2">
-            <Label>纸张尺寸</Label>
-            <Select
-              value={settings.paperSize.name}
-              onValueChange={(v) => {
-                const size = PAPER_SIZES.find((s) => s.name === v);
-                if (size) updateSetting("paperSize", size);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PAPER_SIZES.map((s) => (
-                  <SelectItem key={s.name} value={s.name}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {(["top", "right", "bottom", "left"] as const).map((k) => (
-              <div key={k} className="space-y-1">
-                <Label className="text-muted-foreground text-xs">
-                  {{ top: "上", right: "右", bottom: "下", left: "左" }[k]}
-                </Label>
-                <Input
-                  type="number"
-                  value={settings.margin[k]}
-                  onChange={(e) => updateMargin(k, Number(e.target.value))}
-                  min={0}
-                  step={1}
-                />
-              </div>
-            ))}
-          </div>
-        </SettingGroup>
-      </SettingsPanel>
-    </main>
+      <SettingGroup title="纸张与边距">
+        <div className="space-y-2">
+          <Label>纸张尺寸</Label>
+          <Select
+            value={settings.paperSize.name}
+            onValueChange={(v) => {
+              const size = PAPER_SIZES.find((s) => s.name === v);
+              if (size) updateSetting("paperSize", size);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAPER_SIZES.map((s) => (
+                <SelectItem key={s.name} value={s.name}>
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <MarginFields value={settings.margin} onChange={updateMargin} />
+      </SettingGroup>
+    </CanvasWorkspace>
   );
 }
