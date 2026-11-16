@@ -79,6 +79,16 @@ export const FONTS: Record<string, FontOption> = {
     webFamily: "ZCOOL XiaoWei",
     label: "站酷小薇",
   },
+  kuaile: {
+    stack: '"ZCOOL KuaiLe", "KaiTi", cursive',
+    webFamily: "ZCOOL KuaiLe",
+    label: "站酷快乐体",
+  },
+  klee: {
+    stack: '"Klee One", "LXGW WenKai", "KaiTi", serif',
+    webFamily: "Klee One",
+    label: "日式楷书",
+  },
   local_kaiti: localFontOption("系统楷体", "KaiTi"),
   local_stkaiti: localFontOption("华文楷体", "STKaiti"),
   local_kaitisc: localFontOption("Kaiti SC", "Kaiti SC"),
@@ -124,6 +134,8 @@ export const COMMON_FONT_KEYS = [
   "zhimang",
   "liujian",
   "xiaowei",
+  "kuaile",
+  "klee",
 ] as const;
 
 export const LOCAL_FONT_KEYS = [

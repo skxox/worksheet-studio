@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@fontsource/klee-one':
+        specifier: ^5.3.1
+        version: 5.3.1
       '@fontsource/liu-jian-mao-cao':
         specifier: ^5.3.0
         version: 5.3.0
@@ -23,6 +26,9 @@ importers:
       '@fontsource/noto-serif-sc':
         specifier: ^5.3.1
         version: 5.3.1
+      '@fontsource/zcool-kuaile':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fontsource/zcool-xiaowei':
         specifier: ^5.3.0
         version: 5.3.0
@@ -511,6 +517,9 @@ packages:
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
+  '@fontsource/klee-one@5.3.1':
+    resolution: {integrity: sha512-TWW1hZylfNSpsKAIxKlCUY02gSiRhulJgfVIOlpDMZhBbssXvKBnbUREFkZuB0Hefe2xiso07JWKDxOENKwu1w==}
+
   '@fontsource/liu-jian-mao-cao@5.3.0':
     resolution: {integrity: sha512-OaFm4okm77XoGA9jp1J89tDjdWlzb68yJCUL7LV75QxUWF/qOBRVqmhP7XFFsgcn/PL+nc2dPvRGT/8yit5LZg==}
 
@@ -525,6 +534,9 @@ packages:
 
   '@fontsource/noto-serif-sc@5.3.1':
     resolution: {integrity: sha512-nIK2HyNGcUi2TGwIfrk2MItkh0O3Y5+TI8iPfPSzoNY6uyXYfQ9qqch8czk3aa1VhV4EU52uwCYCe1UDKJELpg==}
+
+  '@fontsource/zcool-kuaile@5.3.0':
+    resolution: {integrity: sha512-jn4vpQ6QSVEckUn7uk5a9XcZMxEksTRqljmeE1VKRGMjGd6VoXdMyLGSdnTXSVwZLCCEHaIcm/2cdQuwvasJ9w==}
 
   '@fontsource/zcool-xiaowei@5.3.0':
     resolution: {integrity: sha512-iRuUPl9ONFbYzi6JcEshpE4VedINyzQ4hv0Z5XEt0cB0pMPiQeqc2Qvv1NwJCNzkPwG02VCdcO+cF2K8ylYn2A==}
@@ -5006,6 +5018,8 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
+  '@fontsource/klee-one@5.3.1': {}
+
   '@fontsource/liu-jian-mao-cao@5.3.0': {}
 
   '@fontsource/long-cang@5.3.0': {}
@@ -5015,6 +5029,8 @@ snapshots:
   '@fontsource/noto-sans-sc@5.3.1': {}
 
   '@fontsource/noto-serif-sc@5.3.1': {}
+
+  '@fontsource/zcool-kuaile@5.3.0': {}
 
   '@fontsource/zcool-xiaowei@5.3.0': {}
 
