@@ -6,6 +6,7 @@ import {
   mmToPx,
   toMarginPx,
   getCanvasSize,
+  placeCenteredGridBlock,
 } from "@/lib/paper/geometry";
 
 describe("mmToPx", () => {
@@ -71,5 +72,79 @@ describe("PAPER_THEMES", () => {
       expect(typeof t.bg).toBe("string");
       expect(typeof t.line).toBe("string");
     }
+  });
+});
+
+describe("placeCenteredGridBlock（居中网格布局）", () => {
+  /** 典型 A4 字帖参数：@3.78px/mm（791.8×1118.66）、边距 36px、
+   *  格 10mm（37.8px）、行距 2mm（7.56px）。 */
+  const a4ref = placeCenteredGridBlock({
+    margin: { left: 36, top: 36 },
+    contentWidth: 791.8 - 36 - 36,
+    contentHeight: 1118.66 - 36 - 36,
+    colUnit: 37.8,
+    rowHeight: 37.8,
+    rowGap: 7.56,
+  });
+
+  it("rows/cols 向下取整（行距最后一行不占）", () => {
+    expect(a4ref.cols).toBe(Math.floor(719.8 / 37.8)); // 19
+    expect(a4ref.rows).toBe(Math.floor((1046.66 + 7.56) / (37.8 + 7.56))); // 23
+  });
+
+  it("整块在边距内容盒内水平/垂直居中（上下留白一致）", () => {
+    const blockW = a4ref.cols * 37.8;
+    const blockH = a4ref.rows * (37.8 + 7.56) - 7.56;
+    expect(a4ref.startX).toBeCloseTo(36 + (719.8 - blockW) / 2, 5);
+    expect(a4ref.startY).toBeCloseTo(36 + (1046.66 - blockH) / 2, 5);
+    // 块底即内容盒内最后一个格子的底边
+    expect(a4ref.endY).toBeCloseTo(a4ref.startY + blockH, 5);
+    // 上留白 === 下留白（用户反馈的核心诉求）
+    expect(a4ref.startY - 36).toBeCloseTo(36 + 1046.66 - a4ref.endY, 5);
+  });
+
+  it("rowGap 为 0 时退化为整除布局，仍居中", () => {
+    const p = placeCenteredGridBlock({
+      margin: { left: 10, top: 20 },
+      contentWidth: 100,
+      contentHeight: 95,
+      colUnit: 10,
+      rowHeight: 30,
+      rowGap: 0,
+    });
+    expect(p.rows).toBe(3); // floor(95/30)
+    expect(p.cols).toBe(10);
+    expect(p.startY).toBeCloseTo(20 + (95 - 90) / 2, 5); // 22.5
+    expect(p.endY).toBeCloseTo(20 + (95 - 90) / 2 + 90, 5);
+  });
+
+  it("格大于内容盒时 rows/cols 归零且起点落在盒中心", () => {
+    const p = placeCenteredGridBlock({
+      margin: { left: 5, top: 5 },
+      contentWidth: 30,
+      contentHeight: 30,
+      colUnit: 100,
+      rowHeight: 100,
+      rowGap: 10,
+    });
+    expect(p.rows).toBe(0);
+    expect(p.cols).toBe(0);
+    expect(p.startX).toBeCloseTo(5 + 30 / 2, 5);
+    expect(p.startY).toBeCloseTo(5 + 30 / 2, 5);
+    expect(p.endY).toBeCloseTo(p.startY, 5);
+  });
+
+  it("含笔顺/拼音带的整行高参与行数计算（附加行抬高行步进）", () => {
+    // 行高 = 拼音带(0.6c) + 格(c) = 1.6×37.8 = 60.48
+    const p = placeCenteredGridBlock({
+      margin: { left: 36, top: 36 },
+      contentWidth: 719.8,
+      contentHeight: 1046.66,
+      colUnit: 37.8,
+      rowHeight: 37.8 * 1.6,
+      rowGap: 7.56,
+    });
+    expect(p.rows).toBe(Math.floor((1046.66 + 7.56) / (37.8 * 1.6 + 7.56)));
+    expect(p.rows).toBeGreaterThan(0);
   });
 });

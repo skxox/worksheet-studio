@@ -1,7 +1,13 @@
-import type { CopybookSettings, GridType, MarginPx } from "@/types";
+import {
+  ControlTraceWeight,
+  type CopybookSettings,
+  type GridType,
+  type MarginPx,
+} from "@/types";
 import { fontStack } from "@/lib/fonts";
 import {
   mmToPx,
+  placeCenteredGridBlock,
   drawTianGrid,
   drawMiGrid,
   drawHuigongGrid,
@@ -14,6 +20,19 @@ import {
 } from "@/lib/paper";
 import { charAllPinyins } from "@/lib/pinyin";
 import { drawCharStrokes, peekStroke } from "@/lib/stroke";
+import {
+  buildEnglishCharacterSamples,
+  splitEnglishWordRows,
+  splitPinyinPracticeRows,
+} from "@/lib/copybook-language";
+import {
+  buildNumberPracticeSequence,
+  parseNumberRows,
+} from "@/lib/copybook-number";
+import {
+  drawControlPattern,
+  parseControlPatternCodes,
+} from "@/lib/copybook-control";
 
 export type RenderModeLike = CopybookSettings["renderMode"];
 
@@ -328,6 +347,8 @@ function drawLineGuides(
 ): number[] {
   const rowCount = Math.max(0, Math.floor(contentHeight / lineHeight));
   if (rowCount <= 0) return [];
+  // 居中布局：整块行组在边距内容盒内垂直居中，上下留白一致
+  const blockTop = m.top + (contentHeight - rowCount * lineHeight) / 2;
   const x0 = m.left;
   const x1 = m.left + contentWidth;
   // 双横线间距：随行高自适应，夹在合理区间
@@ -337,7 +358,7 @@ function drawLineGuides(
   ctx.strokeStyle = settings.lineColor;
   ctx.lineWidth = 1;
   for (let i = 0; i <= rowCount; i++) {
-    const y = m.top + i * lineHeight;
+    const y = blockTop + i * lineHeight;
     const isEdge = i === 0 || i === rowCount;
     if (isEdge) {
       // 首条 / 末条：单横线
@@ -363,7 +384,7 @@ function drawLineGuides(
   // 单线取其本身）再求中点。文字按此中心绘制 = 在双横线内部空间上下居中。
   const centers: number[] = [];
   for (let r = 0; r < rowCount; r++) {
-    const topY = m.top + r * lineHeight;
+    const topY = blockTop + r * lineHeight;
     const innerTop = topY + (r === 0 ? 0 : gap);
     const innerBottom = topY + lineHeight - (r + 1 === rowCount ? 0 : gap);
     centers.push((innerTop + innerBottom) / 2);
@@ -383,24 +404,45 @@ function drawWordCopybook(
     .map((item) => item.trim())
     .filter(Boolean);
   const cell = mmToPx(settings.gridSize);
-  const cols = Math.max(1, Math.floor(contentWidth / cell));
   const rowGap = mmToPx(settings.rowGap);
   const groupGap = mmToPx(settings.groupSpacing || 4);
-  const maxY = m.top + contentHeight;
   const auxRowH = settings.showPinyin ? cell * 0.6 : 0;
+  // 居中布局：行/列取整后整块网格在边距内容盒内水平/垂直居中（上下间距一致）
+  const placement = placeCenteredGridBlock({
+    margin: m,
+    contentWidth,
+    contentHeight,
+    colUnit: cell,
+    rowHeight: auxRowH + cell,
+    rowGap,
+  });
+  const cols = Math.max(1, placement.cols);
+  const area: MarginPx = {
+    ...m,
+    left: placement.startX,
+    top: placement.startY,
+  };
+  const maxY = placement.endY;
 
   function drawWordLine(y: number, text: string): number {
-    if (y + auxRowH + cell > maxY) return maxY + 1;
+    if (y + auxRowH + cell > maxY + 0.5) return maxY + 1;
     const chars = Array.from(text).filter((c) => c.trim().length > 0);
 
     if (settings.showPinyin) {
-      drawPinyinRule(ctx, m.left, y, cols * cell, auxRowH, settings.lineColor);
+      drawPinyinRule(
+        ctx,
+        area.left,
+        y,
+        cols * cell,
+        auxRowH,
+        settings.lineColor,
+      );
       chars.forEach((ch, index) => {
         if (index >= cols) return;
         drawPinyinText(
           ctx,
           effectivePinyin(ch, settings),
-          m.left + index * cell + cell / 2,
+          area.left + index * cell + cell / 2,
           y,
           auxRowH,
           cell - 4,
@@ -416,7 +458,7 @@ function drawWordCopybook(
         drawCharCell(
           ctx,
           ch,
-          m.left + c * cell,
+          area.left + c * cell,
           y,
           cell,
           settings,
@@ -426,7 +468,7 @@ function drawWordCopybook(
         drawCellBox(
           ctx,
           settings.gridType,
-          m.left + c * cell,
+          area.left + c * cell,
           y,
           cell,
           settings.lineColor,
@@ -437,43 +479,15 @@ function drawWordCopybook(
     return y + cell + rowGap;
   }
 
-  let y = m.top;
+  let y = area.top;
   for (const word of groups) {
     y = drawWordLine(y, word);
     if (y > maxY) break;
     if (settings.insertEmptyRow) y += groupGap;
   }
-  while (y + auxRowH + cell <= maxY) {
+  while (y + auxRowH + cell <= maxY + 0.5) {
     y = drawWordLine(y, "");
   }
-}
-
-function parseNumberRows(content: string): string[] {
-  const lines = content.split("\n");
-  const rows: string[] = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      rows.push("");
-      continue;
-    }
-
-    const tokens = trimmed.split(/\s+/).filter(Boolean);
-    if (tokens.length > 1) {
-      rows.push(...tokens);
-      continue;
-    }
-
-    if (/^[0-9/]+$/.test(trimmed) && !trimmed.includes("/")) {
-      rows.push(...Array.from(trimmed));
-      continue;
-    }
-
-    rows.push(trimmed);
-  }
-
-  return rows.length > 0 ? rows : [""];
 }
 
 function drawNumberGridRow(
@@ -531,44 +545,45 @@ function drawNumberCopybook(
 ) {
   const rowHeight = mmToPx(settings.gridSize);
   const colWidth = rowHeight * 0.52;
-  const cols = Math.max(1, Math.floor(contentWidth / colWidth));
   const rowGap = mmToPx(settings.rowGap);
-  const maxY = m.top + contentHeight;
   const rows = parseNumberRows(settings.content);
-  const practiceLimit = Math.max(0, Math.min(cols, settings.solidCount));
-
-  function buildPracticeSequence(token: string): string[] {
-    const raw = token.replace(/\s+/g, "");
-    if (!raw) return [];
-    if (raw.length === 1) {
-      return Array.from({ length: practiceLimit }, () => raw);
-    }
-
-    const sequence = Array.from(raw);
-    const result: string[] = [];
-    while (result.filter((item) => item !== "/").length < practiceLimit) {
-      result.push(...sequence);
-      if (result.filter((item) => item !== "/").length < practiceLimit) {
-        result.push("/");
-      }
-    }
-    return result.slice(0, Math.min(cols, result.length));
-  }
+  // 居中布局：整块网格在边距内容盒内水平/垂直居中（数字列宽 = 0.52×行高）
+  const placement = placeCenteredGridBlock({
+    margin: m,
+    contentWidth,
+    contentHeight,
+    colUnit: colWidth,
+    rowHeight,
+    rowGap,
+  });
+  const cols = Math.max(1, placement.cols);
+  const gridWidth = cols * colWidth;
+  const gridLeft = placement.startX;
+  const maxY = placement.endY;
+  const visibleColumns = settings.insertEmptyCol ? Math.ceil(cols / 2) : cols;
+  const practiceLimit = Math.max(
+    0,
+    Math.min(visibleColumns, settings.solidCount),
+  );
 
   function drawNumberLine(y: number, token?: string): number {
-    if (y + rowHeight > maxY) return maxY + 1;
+    if (y + rowHeight > maxY + 0.5) return maxY + 1;
     drawNumberGridRow(
       ctx,
-      m.left,
+      gridLeft,
       y,
-      contentWidth,
+      gridWidth,
       rowHeight,
       colWidth,
       settings.lineColor,
     );
 
     if (token) {
-      const sequence = buildPracticeSequence(token);
+      const sequence = buildNumberPracticeSequence(
+        token,
+        practiceLimit,
+        visibleColumns,
+      );
       if (sequence.length > 0) {
         let renderedCount = 0;
         for (let c = 0; c < cols; c++) {
@@ -586,7 +601,7 @@ function drawNumberCopybook(
           paintChar(
             ctx,
             ch,
-            m.left + c * colWidth + colWidth / 2,
+            gridLeft + c * colWidth + colWidth / 2,
             y + rowHeight / 2 + (settings.vOffset / 100) * rowHeight,
             look.style,
             look.color,
@@ -602,14 +617,14 @@ function drawNumberCopybook(
     return y + rowHeight + rowGap;
   }
 
-  let y = m.top;
+  let y = placement.startY;
   for (const row of rows) {
     y = drawNumberLine(y, row);
     if (y > maxY) break;
     if (settings.insertEmptyRow) y = drawNumberLine(y);
   }
 
-  while (y + rowHeight <= maxY) {
+  while (y + rowHeight <= maxY + 0.5) {
     y = drawNumberLine(y);
   }
 }
@@ -651,17 +666,31 @@ function drawStrokeCopybook(
 ) {
   const rows = parseStrokeTemplateRows(settings.content);
   const cell = mmToPx(settings.gridSize);
-  const cols = Math.max(1, Math.floor(contentWidth / cell));
   const rowGap = mmToPx(settings.rowGap);
-  const maxY = m.top + contentHeight;
-  let y = m.top;
+  // 居中布局：整块网格在边距内容盒内水平/垂直居中（上下间距一致）
+  const placement = placeCenteredGridBlock({
+    margin: m,
+    contentWidth,
+    contentHeight,
+    colUnit: cell,
+    rowHeight: cell,
+    rowGap,
+  });
+  const cols = Math.max(1, placement.cols);
+  const area: MarginPx = {
+    ...m,
+    left: placement.startX,
+    top: placement.startY,
+  };
+  const maxY = placement.endY;
+  let y = area.top;
 
   for (const row of rows) {
-    if (y + cell > maxY) break;
+    if (y + cell > maxY + 0.5) break;
     // 笔顺拆解练习的是「包含该笔画的字」，而非笔画本身：无例字则该行只画空格、不绘字
     const guideChar = row.example.trim().charAt(0);
     for (let c = 0; c < cols; c++) {
-      const x = m.left + c * cell;
+      const x = area.left + c * cell;
       if (guideChar) {
         drawCharCell(
           ctx,
@@ -680,12 +709,12 @@ function drawStrokeCopybook(
     if (settings.insertEmptyRow) y += cell + rowGap;
   }
 
-  while (y + cell <= maxY) {
+  while (y + cell <= maxY + 0.5) {
     for (let c = 0; c < cols; c++) {
       drawCellBox(
         ctx,
         settings.gridType,
-        m.left + c * cell,
+        area.left + c * cell,
         y,
         cell,
         settings.lineColor,
@@ -778,7 +807,6 @@ function drawCharacterCopybook(
   markers?: PinyinToggleMarker[],
 ) {
   const cell = mmToPx(settings.gridSize);
-  const cols = Math.max(1, Math.floor(contentWidth / cell));
   const chars = Array.from(settings.content).filter((c) => c.trim().length > 0);
 
   // 笔顺行与拼音四线三格行同高（均略矮于字格），笔顺字形/拼音字号随之等比缩小
@@ -786,17 +814,33 @@ function drawCharacterCopybook(
   const strokeRowH = settings.showStroke ? auxRowH : 0;
   const pinyinRowH = settings.showPinyin ? auxRowH : 0;
   const rowGap = mmToPx(settings.rowGap);
-  const maxY = m.top + contentHeight;
+  // 居中布局：行/列取整后，整块网格在边距内容盒内水平/垂直居中，
+  // 上下留白各为剩余高度的一半，视觉间距一致。
+  const placement = placeCenteredGridBlock({
+    margin: m,
+    contentWidth,
+    contentHeight,
+    colUnit: cell,
+    rowHeight: strokeRowH + pinyinRowH + cell,
+    rowGap,
+  });
+  const cols = Math.max(1, placement.cols);
+  const area: MarginPx = {
+    ...m,
+    left: placement.startX,
+    top: placement.startY,
+  };
+  const maxY = placement.endY;
 
   function drawPracticeGroup(y: number, ch?: string): number {
-    if (y + strokeRowH + pinyinRowH + cell > maxY) return maxY + 1;
+    if (y + strokeRowH + pinyinRowH + cell > maxY + 0.5) return maxY + 1;
 
     if (settings.showStroke) {
       // 整行外边框：与拼音行/字格行同宽（cols*cell），三行连成一整块；线色与字格一致
       ctx.save();
       ctx.strokeStyle = settings.lineColor;
       ctx.lineWidth = 1;
-      ctx.strokeRect(m.left, y, cols * cell, strokeRowH);
+      ctx.strokeRect(area.left, y, cols * cell, strokeRowH);
       ctx.restore();
       const sd = ch ? peekStroke(ch) : null;
       if (ch && sd && sd.strokes.length > 0) {
@@ -807,7 +851,7 @@ function drawCharacterCopybook(
         const gy = y + (strokeRowH - gs) / 2;
         // 逐笔累进：第 k 个位置画前 k 笔，已写笔画用首字高亮的字色、当前第 k 笔标红（不画方格、不标序号）
         for (let k = 1; k <= n; k++) {
-          const sx = m.left + (k - 1) * mini;
+          const sx = area.left + (k - 1) * mini;
           const gx = sx + (mini - gs) / 2;
           drawCharStrokes(ctx, ch, gx, gy, gs, {
             color: settings.color,
@@ -824,10 +868,10 @@ function drawCharacterCopybook(
       // 多音字：在行首左侧页边距空白处放一个可点击切换按钮，并把命中区记入 markers
       if (ch && markers) {
         const all = charAllPinyins(ch);
-        if (all.length > 1 && m.left >= 14) {
+        if (all.length > 1 && area.left >= 14) {
           const btnH = Math.min(pinyinRowH * 0.6, 20);
-          const btnW = Math.min(btnH * 1.15, m.left - 4);
-          const bx = m.left - btnW - 2;
+          const btnW = Math.min(btnH * 1.15, area.left - 4);
+          const bx = area.left - btnW - 2;
           const by = y + (pinyinRowH - btnH) / 2;
           const cur = Math.max(
             0,
@@ -840,7 +884,7 @@ function drawCharacterCopybook(
       // 四线三格：整行连续横线 + 最外两侧竖向边框（与下方字格一体）
       drawPinyinRule(
         ctx,
-        m.left,
+        area.left,
         y,
         cols * cell,
         pinyinRowH,
@@ -856,7 +900,7 @@ function drawCharacterCopybook(
           drawPinyinText(
             ctx,
             py,
-            m.left + c * cell + cell / 2,
+            area.left + c * cell + cell / 2,
             y,
             pinyinRowH,
             cell - 4,
@@ -875,7 +919,7 @@ function drawCharacterCopybook(
         drawCharCell(
           ctx,
           ch,
-          m.left + c * cell,
+          area.left + c * cell,
           y,
           cell,
           settings,
@@ -885,7 +929,7 @@ function drawCharacterCopybook(
         drawCellBox(
           ctx,
           settings.gridType,
-          m.left + c * cell,
+          area.left + c * cell,
           y,
           cell,
           settings.lineColor,
@@ -896,7 +940,7 @@ function drawCharacterCopybook(
     return y + cell + rowGap;
   }
 
-  let y = m.top;
+  let y = area.top;
   for (const ch of chars) {
     y = drawPracticeGroup(y, ch);
     if (y > maxY) break;
@@ -909,8 +953,105 @@ function drawCharacterCopybook(
   }
 
   // 内容画完后继续铺满整页练习格，符合字帖工坊的使用预期。
-  while (y + strokeRowH + pinyinRowH + cell <= maxY) {
+  while (y + strokeRowH + pinyinRowH + cell <= maxY + 0.5) {
     y = drawPracticeGroup(y);
+  }
+}
+
+/** 拼音字帖：每个输入行独立成行，按字符循环生成描红格。 */
+function drawPinyinCopybook(
+  ctx: CanvasRenderingContext2D,
+  settings: CopybookSettings,
+  m: MarginPx,
+  contentWidth: number,
+  contentHeight: number,
+) {
+  const rowHeight = mmToPx(settings.gridSize);
+  const rowGap = mmToPx(settings.rowGap);
+  const rowStep = rowHeight + rowGap;
+  const maxRows = Math.max(0, Math.floor((contentHeight + rowGap) / rowStep));
+  // 居中布局：整块行组在边距内容盒内垂直居中（拼音行横向铺满，无需水平居中）
+  const startY =
+    m.top +
+    (contentHeight - (maxRows > 0 ? maxRows * rowStep - rowGap : 0)) / 2;
+  const columns = Math.max(1, Math.floor(contentWidth / (rowHeight * 0.82)));
+  const cellWidth = contentWidth / columns;
+  const sampleLimit = Math.min(
+    columns,
+    Math.max(0, Math.floor(settings.solidCount)),
+  );
+  const fontSize = rowHeight * (settings.fontScale / 100);
+  const baselineOffset = (settings.vOffset / 100) * rowHeight;
+
+  const drawRow = (characters: string[], y: number) => {
+    ctx.save();
+    ctx.strokeStyle = settings.lineColor;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(m.left, y);
+    ctx.lineTo(m.left + contentWidth, y);
+    ctx.moveTo(m.left, y + rowHeight);
+    ctx.lineTo(m.left + contentWidth, y + rowHeight);
+    for (let column = 0; column <= columns; column++) {
+      const x = m.left + column * cellWidth;
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y + rowHeight);
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle = "#b8c2d0";
+    ctx.lineWidth = 0.6;
+    ctx.setLineDash([3, 2]);
+    for (const guide of [1, 2]) {
+      const guideY = y + (rowHeight * guide) / 3;
+      ctx.beginPath();
+      ctx.moveTo(m.left, guideY);
+      ctx.lineTo(m.left + contentWidth, guideY);
+      ctx.stroke();
+    }
+
+    if (characters.length > 0 && sampleLimit > 0) {
+      setFont(ctx, settings, fontSize);
+      for (let column = 0; column < sampleLimit; column++) {
+        const character = characters[column % characters.length];
+        const look = practiceCellLook(settings, column);
+        paintChar(
+          ctx,
+          character,
+          m.left + (column + 0.5) * cellWidth,
+          y + rowHeight / 2 + baselineOffset,
+          look.style,
+          look.color,
+          settings.miaoColor,
+          fontSize,
+        );
+      }
+    }
+    ctx.restore();
+  };
+
+  const rows = splitPinyinPracticeRows(settings.content);
+  let y = startY;
+  let rowsUsed = 0;
+
+  for (const characters of rows) {
+    if (rowsUsed >= maxRows) break;
+    drawRow(characters, y);
+    y += rowStep;
+    rowsUsed++;
+
+    if (settings.insertEmptyRow && rowsUsed < maxRows) {
+      drawRow([], y);
+      y += rowStep;
+      rowsUsed++;
+    }
+  }
+
+  while (rowsUsed < maxRows) {
+    drawRow([], y);
+    y += rowStep;
+    rowsUsed++;
   }
 }
 
@@ -925,11 +1066,25 @@ function drawParagraphCells(
   contentHeight: number,
 ) {
   const cell = mmToPx(settings.gridSize);
-  const cols = Math.max(1, Math.floor(contentWidth / cell));
   const rowGap = mmToPx(settings.rowGap);
   const stepY = cell + rowGap;
-  const maxY = m.top + contentHeight;
-  const rowCount = Math.ceil(contentHeight / stepY) + 1;
+  // 居中布局：整块网格在边距内容盒内水平/垂直居中（上下间距一致）
+  const placement = placeCenteredGridBlock({
+    margin: m,
+    contentWidth,
+    contentHeight,
+    colUnit: cell,
+    rowHeight: cell,
+    rowGap,
+  });
+  const cols = Math.max(1, placement.cols);
+  const area: MarginPx = {
+    ...m,
+    left: placement.startX,
+    top: placement.startY,
+  };
+  const maxY = placement.endY;
+  const rowCount = placement.rows;
 
   // 1) 把文字按「换行切段」流式铺到网格坐标；保留段首空白作缩进
   //    （空白也占一格，只是不写字、不计入描红序号）
@@ -957,10 +1112,10 @@ function drawParagraphCells(
 
   // 2) 逐格绘制：非空白字绘字（含格 + 上下偏移），空白 / 空位绘空格
   for (let rr = 0; rr < rowCount; rr++) {
-    const y = m.top + rr * stepY;
+    const y = area.top + rr * stepY;
     if (y + cell > maxY + 0.5) break;
     for (let cc = 0; cc < cols; cc++) {
-      const x = m.left + cc * cell;
+      const x = area.left + cc * cell;
       const hit = placed.get(`${rr},${cc}`);
       if (hit && hit.ch.trim()) {
         drawCharCell(
@@ -1066,38 +1221,89 @@ function drawEnglishCopybook(
   contentWidth: number,
   contentHeight: number,
 ) {
-  const unit = settings.fontSize * 2.4;
-  const gap = unit * 0.4;
-  const seq = Array.from(settings.content).filter((c) => c.trim().length > 0);
-  const charW = settings.fontSize * 0.8;
-  const cols = Math.max(1, Math.floor(contentWidth / charW));
+  const unit = mmToPx(settings.gridSize);
+  const rowGap = mmToPx(settings.rowGap);
+  const rowStep = unit + rowGap;
+  const maxRows = Math.max(0, Math.floor((contentHeight + rowGap) / rowStep));
+  // 居中布局：整块行组在边距内容盒内垂直居中（四线格横向铺满，无需水平居中）
+  const startY =
+    m.top +
+    (contentHeight - (maxRows > 0 ? maxRows * rowStep - rowGap : 0)) / 2;
+  const fontSize = unit * (settings.fontScale / 100);
+  const maxCopies = Math.max(0, Math.floor(settings.solidCount));
+  const baselineOffset = (settings.vOffset / 100) * unit;
 
-  let y = m.top;
-  let idx = 0;
-  while (y + unit <= m.top + contentHeight && idx < seq.length) {
+  const drawRow = (sample: string, y: number) => {
     drawFourLineGrid(ctx, m.left, y, contentWidth, unit, settings.lineColor);
     ctx.save();
-    setFont(ctx, settings);
-    const baselineY = y + unit * (2 / 3);
-    for (let c = 0; c < cols && idx < seq.length; c++) {
-      const cx = m.left + (c + 0.5) * charW;
+    setFont(ctx, settings, fontSize);
+    const sampleWidth = ctx.measureText(sample).width;
+    const sampleGap = Math.max(mmToPx(0.5), fontSize * 0.28);
+    let cursorX = m.left;
+
+    for (let index = 0; index < maxCopies; index++) {
+      if (cursorX + sampleWidth > m.left + contentWidth) break;
+      const look = practiceCellLook(settings, index);
       paintChar(
         ctx,
-        seq[idx++],
-        cx,
-        baselineY,
-        settings.renderMode === "hollow"
-          ? "hollow"
-          : settings.renderMode === "miao"
-            ? "trace"
-            : "solid",
-        settings.color,
+        sample,
+        cursorX + sampleWidth / 2,
+        y + (unit * 2) / 3 + baselineOffset,
+        look.style,
+        look.color,
         settings.miaoColor,
-        settings.fontSize,
+        fontSize,
+        "center",
+        "alphabetic",
       );
+      cursorX += sampleWidth + sampleGap;
     }
     ctx.restore();
-    y += unit + gap;
+  };
+
+  const drawBlankRow = (y: number) =>
+    drawFourLineGrid(ctx, m.left, y, contentWidth, unit, settings.lineColor);
+
+  let y = startY;
+  let rowsUsed = 0;
+
+  if (settings.type === "english-char") {
+    const samples = buildEnglishCharacterSamples(
+      settings.content,
+      settings.insertEmptyRow ? Math.ceil(maxRows / 2) : maxRows,
+      settings.pairLetterCase,
+    );
+    for (const sample of samples) {
+      drawRow(sample, y);
+      y += rowStep;
+      rowsUsed++;
+
+      if (settings.insertEmptyRow && rowsUsed < maxRows) {
+        drawBlankRow(y);
+        y += rowStep;
+        rowsUsed++;
+      }
+    }
+  } else {
+    for (const word of splitEnglishWordRows(settings.content)) {
+      if (rowsUsed >= maxRows) break;
+      if (word) drawRow(word, y);
+      else drawBlankRow(y);
+      y += rowStep;
+      rowsUsed++;
+
+      if (settings.insertEmptyRow && rowsUsed < maxRows) {
+        drawBlankRow(y);
+        y += rowStep;
+        rowsUsed++;
+      }
+    }
+  }
+
+  while (rowsUsed < maxRows) {
+    drawBlankRow(y);
+    y += rowStep;
+    rowsUsed++;
   }
 }
 
@@ -1194,7 +1400,7 @@ function drawEnglishParagraphCopybook(
   ctx.restore();
 }
 
-/** 控笔练习：多种线条图案铺满整页 */
+/** 控笔练习：每个图案占一行，行内按描红数量重复，余下格子留白。 */
 function drawControlCopybook(
   ctx: CanvasRenderingContext2D,
   settings: CopybookSettings,
@@ -1202,76 +1408,70 @@ function drawControlCopybook(
   contentWidth: number,
   contentHeight: number,
 ) {
-  const rowH = settings.fontSize * 1.6;
-  ctx.save();
-  ctx.strokeStyle = settings.color;
-  ctx.lineWidth = Math.max(1, settings.fontSize * 0.05);
-  ctx.lineCap = "round";
+  const cell = mmToPx(settings.gridSize);
+  const rowGap = mmToPx(settings.rowGap);
+  const rowStep = cell + rowGap;
+  // 居中布局：整块网格在边距内容盒内水平/垂直居中（上下间距一致）
+  const { rows, cols, startX, startY } = placeCenteredGridBlock({
+    margin: m,
+    contentWidth,
+    contentHeight,
+    colUnit: cell,
+    rowHeight: cell,
+    rowGap,
+  });
+  if (cell <= 0 || cols <= 0 || rows <= 0) return;
 
-  const patterns: ((
-    c: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-  ) => void)[] = [
-    (c, x, y, w, h) => {
-      const step = h * 0.8;
-      for (let sx = x; sx < x + w; sx += step) {
-        c.beginPath();
-        c.moveTo(sx, y + h);
-        c.lineTo(sx + h * 0.8, y);
-        c.stroke();
-      }
-    },
-    (c, x, y, w, h) => {
-      const mid = y + h / 2;
-      const amp = h * 0.3;
-      c.beginPath();
-      c.moveTo(x, mid);
-      for (let sx = x; sx <= x + w; sx += 4) {
-        c.lineTo(sx, mid + Math.sin(((sx - x) / h) * Math.PI * 2) * amp);
-      }
-      c.stroke();
-    },
-    (c, x, y, w, h) => {
-      const r = h * 0.35;
-      for (let sx = x + r; sx < x + w; sx += r * 2) {
-        c.beginPath();
-        c.arc(sx, y + h / 2, r, 0, Math.PI * 2);
-        c.stroke();
-      }
-    },
-    (c, x, y, w, h) => {
-      const step = h * 0.7;
-      c.beginPath();
-      c.moveTo(x, y + h / 2);
-      for (let sx = x; sx < x + w; sx += step) {
-        c.lineTo(sx + step / 2, y + h * 0.15);
-        c.lineTo(sx + step, y + h * 0.85);
-      }
-      c.stroke();
-    },
-    (c, x, y, w, h) => {
-      const cx = x + h / 2;
-      const cy = y + h / 2;
-      c.beginPath();
-      for (let t = 0; t < Math.PI * 8; t += 0.2) {
-        const r = (t / (Math.PI * 8)) * (h * 0.45);
-        const px = cx + Math.cos(t) * r;
-        const py = cy + Math.sin(t) * r;
-        if (t === 0) c.moveTo(px, py);
-        else c.lineTo(px, py);
-      }
-      c.stroke();
-    },
-  ];
+  const codes = parseControlPatternCodes(settings.content);
+  const visibleCols = Math.min(
+    cols,
+    Math.max(0, Math.floor(settings.solidCount)),
+  );
+  const traceWidth =
+    settings.controlTraceWeight === ControlTraceWeight.Bold
+      ? Math.max(1.8, cell * 0.055)
+      : Math.max(0.9, cell * 0.03);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(startX, startY, cols * cell, rows * rowStep - rowGap);
+  ctx.clip();
+  ctx.strokeStyle = settings.lineColor;
+  ctx.lineWidth = 1;
+
+  for (let row = 0; row < rows; row++) {
+    const y = startY + row * rowStep;
+    const bottom = y + cell;
+    ctx.moveTo(startX, y);
+    ctx.lineTo(startX + cols * cell, y);
+    ctx.moveTo(startX, bottom);
+    ctx.lineTo(startX + cols * cell, bottom);
+    for (let col = 0; col <= cols; col++) {
+      const x = startX + col * cell;
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, bottom);
+    }
+  }
+  ctx.stroke();
 
   let row = 0;
-  for (let y = m.top; y + rowH <= m.top + contentHeight; y += rowH) {
-    patterns[row % patterns.length](ctx, m.left, y, contentWidth, rowH);
-    row++;
+  for (const code of codes) {
+    if (row >= rows) break;
+    const y = startY + row * rowStep;
+    for (let col = 0; col < visibleCols; col++) {
+      drawControlPattern(
+        ctx,
+        code,
+        startX + col * cell,
+        y,
+        cell,
+        settings.miaoColor,
+        traceWidth,
+      );
+    }
+    row += settings.insertEmptyRow ? 2 : 1;
   }
+
   ctx.restore();
 }
 
@@ -1300,18 +1500,9 @@ export function drawCopybook(
 
   switch (settings.type) {
     case "pinyin":
-      // 拼音字帖 = 汉字网格 + 强制显示拼音
-      drawCharacterCopybook(
-        ctx,
-        { ...settings, showPinyin: true },
-        m,
-        contentWidth,
-        contentHeight,
-        markers,
-      );
+      drawPinyinCopybook(ctx, settings, m, contentWidth, contentHeight);
       break;
     case "character":
-    case "number":
       drawCharacterCopybook(
         ctx,
         settings,

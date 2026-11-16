@@ -320,6 +320,12 @@ const GUIDE_LINE_WIDTH = 0.5;
 /** 虚线引导线的 [短划, 间隙]。比旧的 [4,3]/[3,2] 更细碎，接近主流字帖的细虚线观感。 */
 const GUIDE_DASH: number[] = [2, 2];
 
+/** 虚线引导线颜色：主色 + 50% 透明度（`lineColor+"80"`，外框实线用全色、内部辅助线半透明，
+ *  主次分明——主流字帖的通行做法）。仅识别 #rrggbb，其余原样返回。 */
+function guideColor(color: string): string {
+  return /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}80` : color;
+}
+
 /** 回宫 / 回田 / 回米 / 回九 的内框缩进比例：内方 ≈ 外方 × 50%（实测参考字帖：外方
  *  40px、内方 ~20px）。inset = 0.25 时内框「外缘到外缘」恰为外框外缘的一半——外框线
  *  1px、内框线 0.5px，折半时两边边框正好抵消，无需额外补偿。 */
@@ -447,6 +453,7 @@ export function drawTianGrid(
   ctx.strokeRect(x, y, size, size);
 
   ctx.lineWidth = GUIDE_LINE_WIDTH;
+  ctx.strokeStyle = guideColor(color);
   ctx.setLineDash(GUIDE_DASH);
   strokeTianCross(ctx, x, y, size);
   ctx.setLineDash([]);
@@ -467,6 +474,7 @@ export function drawMiGrid(
   ctx.strokeRect(x, y, size, size);
 
   ctx.lineWidth = GUIDE_LINE_WIDTH;
+  ctx.strokeStyle = guideColor(color);
   ctx.setLineDash(GUIDE_DASH);
   strokeMiLines(ctx, x, y, size);
   ctx.setLineDash([]);
@@ -515,6 +523,7 @@ export function drawJiugongGrid(
   ctx.lineWidth = 1;
   ctx.strokeRect(x, y, size, size);
   ctx.lineWidth = GUIDE_LINE_WIDTH;
+  ctx.strokeStyle = guideColor(color);
   ctx.setLineDash(GUIDE_DASH);
   strokeJiugongLines(ctx, x, y, size);
   ctx.setLineDash([]);
@@ -551,6 +560,7 @@ function strokeHuigongFrame(
   ctx.lineWidth = 1;
   ctx.strokeRect(x, y, size, size);
   ctx.lineWidth = GUIDE_LINE_WIDTH;
+  ctx.strokeStyle = guideColor(color);
   ctx.setLineDash(GUIDE_DASH);
   strokeDashedRect(
     ctx,
@@ -622,6 +632,7 @@ export function drawYuanmiGrid(
   ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
   ctx.stroke();
   ctx.lineWidth = GUIDE_LINE_WIDTH;
+  ctx.strokeStyle = guideColor(color);
   ctx.setLineDash(GUIDE_DASH);
   strokeMiLines(ctx, x, y, size);
   ctx.setLineDash([]);
