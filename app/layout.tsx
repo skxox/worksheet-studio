@@ -12,6 +12,7 @@ import "@fontsource/liu-jian-mao-cao/400.css";
 import "@fontsource/zcool-xiaowei/400.css";
 import "@fontsource/zcool-kuaile/400.css";
 import "@fontsource/klee-one/400.css";
+import "./local-fonts.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { MotionProvider } from "@/components/common/MotionProvider";
 

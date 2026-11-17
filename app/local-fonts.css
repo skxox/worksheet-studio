@@ -1,0 +1,105 @@
+@font-face {
+  font-family: "田英章楷书";
+  src: url("/fonts/tian-yingzhang-kai.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "田英章行书";
+  src: url("/fonts/tian-yingzhang-xing.woff") format("woff");
+  font-display: swap;
+}
+@font-face {
+  font-family: "庞中华楷书";
+  src: url("/fonts/pang-zhonghua-kai.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "庞中华行书";
+  src: url("/fonts/pang-zhonghua-xing.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "司马彦行书";
+  src: url("/fonts/sima-yan-xing.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "荆霄鹏楷书";
+  src: url("/fonts/jing-xiaopeng-kai.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "荆霄鹏行楷";
+  src: url("/fonts/jing-xiaopeng-xingkai.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "汉仪瘦金书";
+  src: url("/fonts/hy-shoujin-jian.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "井柏然手写";
+  src: url("/fonts/jingboran-shouxie.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "默陌纸鸢行草";
+  src: url("/fonts/momo-zhiyuan-xingcao-bold.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "新叶念体";
+  src: url("/fonts/xinye-nian.otf") format("opentype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "杨任东竹石体";
+  src: url("/fonts/yangrendong-zhushi-light.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "瑞美加张清平楷书";
+  src: url("/fonts/ramega-zhangqingping-kai.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "瑞美加张清平行书";
+  src: url("/fonts/ramega-zhangqingping-xing.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "品如手写体";
+  src: url("/fonts/pinru-shouxie.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "黄凯桦手写体";
+  src: url("/fonts/huangkaihua-shouxie.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "情书体";
+  src: url("/fonts/mf-qingshu.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "玉葱楷书";
+  src: url("/fonts/tamanegi-kai-v6.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "正風毛筆";
+  src: url("/fonts/masafont-regular.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "莫大毛筆";
+  src: url("/fonts/bakudai-regular.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Windows 楷体";
+  src: url("/fonts/simkai.ttf") format("truetype");
+  font-display: swap;
+}
