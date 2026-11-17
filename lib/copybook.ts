@@ -4,7 +4,12 @@ import {
   type GridType,
   type MarginPx,
 } from "@/types";
-import { fontStack, pinyinFontSpec, type PinyinFontSpec } from "@/lib/fonts";
+import {
+  fontStack,
+  fontMetrics,
+  pinyinFontSpec,
+  type PinyinFontSpec,
+} from "@/lib/fonts";
 import {
   mmToPx,
   placeCenteredGridBlock,
@@ -295,7 +300,12 @@ function drawCharCell(
   drawCellBox(ctx, settings.gridType, x, y, cell, settings.lineColor);
   const fontPx = cell * (settings.fontScale / 100);
   const cx = x + cell / 2;
-  const cy = y + cell / 2 + (settings.vOffset / 100) * cell;
+  // 垂直位置 = 格心 + 用户上下偏移 + 字体标定的基线修正（手写字体 em 框内字形高低不一）
+  const cy =
+    y +
+    cell / 2 +
+    (settings.vOffset / 100) * cell +
+    (fontMetrics(settings.fontFamily).offset / 100) * fontPx;
   ctx.save();
   setFont(ctx, settings, fontPx);
   paintChar(
@@ -608,7 +618,10 @@ function drawNumberCopybook(
             ctx,
             ch,
             gridLeft + c * colWidth + colWidth / 2,
-            y + rowHeight / 2 + (settings.vOffset / 100) * rowHeight,
+            y +
+              rowHeight / 2 +
+              (settings.vOffset / 100) * rowHeight +
+              (fontMetrics(settings.fontFamily).offset / 100) * fontPx,
             look.style,
             look.color,
             settings.miaoColor,
@@ -1244,7 +1257,9 @@ function drawEnglishCopybook(
     (contentHeight - (maxRows > 0 ? maxRows * rowStep - rowGap : 0)) / 2;
   const fontSize = unit * (settings.fontScale / 100);
   const maxCopies = Math.max(0, Math.floor(settings.solidCount));
-  const baselineOffset = (settings.vOffset / 100) * unit;
+  const baselineOffset =
+    (settings.vOffset / 100) * unit +
+    (fontMetrics(settings.fontFamily).offset / 100) * fontSize;
 
   const drawRow = (sample: string, y: number) => {
     drawFourLineGrid(ctx, m.left, y, contentWidth, unit, settings.lineColor);

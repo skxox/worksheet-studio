@@ -156,4 +156,8 @@ export interface FontOption {
   /** 在 CSS @font-face / Google Fonts 中注册的真实 family 名（用于 document.fonts.load） */
   webFamily: string | null;
   label: string;
+  /** 每款字体的标定：scale = 建议字号%（相对格宽，切换字体时套用）；
+   *  offset = 基线垂直修正（字号 × offset%）。手写字体 em 框内字形高低/大小不一，
+   *  靠这套值把字形拉回格心。无标定者用全局设置原样渲染。 */
+  metrics?: { scale: number; offset: number };
 }

@@ -5,6 +5,7 @@ import {
   fontWebFamily,
   fontKeysForTarget,
   pinyinFontSpec,
+  fontMetrics,
   FONTS,
 } from "@/lib/fonts";
 
@@ -88,5 +89,17 @@ describe("拼音字体（PINYIN_FONTS / pinyinFontSpec）", () => {
     expect(py2.offset).toBe(-3);
     const regular = pinyinFontSpec("py_regular");
     expect(regular.scale).toBe(82);
+  });
+});
+
+describe("fontMetrics（每款字体的标定）", () => {
+  it("有标定的字体返回 scale 与 offset", () => {
+    expect(fontMetrics("pang_xing")).toEqual({ scale: 52, offset: 5 });
+    expect(fontMetrics("jxp_kai").offset).toBe(8);
+    expect(fontMetrics("en_hengshui")).toEqual({ scale: 65, offset: -6 });
+  });
+  it("无标定字体 scale 为 null、offset 为 0", () => {
+    expect(fontMetrics("mashan")).toEqual({ scale: null, offset: 0 });
+    expect(fontMetrics("local:Whatever")).toEqual({ scale: null, offset: 0 });
   });
 });

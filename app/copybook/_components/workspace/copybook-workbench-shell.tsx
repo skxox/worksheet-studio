@@ -18,6 +18,7 @@ import { useFontLoader } from "@/hooks/useFontLoader";
 import { usePersistentState } from "@/hooks/usePersistentState";
 import { useStrokeData } from "@/hooks/useStrokeData";
 import { drawCopybook } from "@/lib/copybook";
+import { fontMetrics } from "@/lib/fonts";
 import type { PinyinToggleMarker } from "@/lib/copybook";
 import { charAllPinyins } from "@/lib/pinyin";
 import { getCanvasSize } from "@/lib/paper";
@@ -159,6 +160,17 @@ export function CopybookWorkbenchShell({
     key: K,
     value: CopybookSettings[K],
   ) => {
+    if (key === "fontFamily" && typeof value === "string") {
+      // 切换字体时套用该款的标定字号：手写字体字面率不同，按各自 scale%
+      // 渲染才能充满格面（offset 修正已在绘制层生效）
+      const { scale } = fontMetrics(value);
+      setSettings((prev) =>
+        scale
+          ? { ...prev, fontFamily: value, fontScale: scale }
+          : { ...prev, fontFamily: value },
+      );
+      return;
+    }
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
   const updateMargin = (key: keyof Margin, value: number) => {

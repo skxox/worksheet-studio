@@ -22,11 +22,13 @@ export const FONTS: Record<string, FontOption> = {
     stack: '"LXGW WenKai", "KaiTi", "STKaiti", serif',
     webFamily: "LXGW WenKai",
     label: "霞鹜文楷",
+    metrics: { scale: 68, offset: 0 },
   },
   kaiti: {
     stack: '"KaiTi", "STKaiti", "LXGW WenKai", serif',
     webFamily: "LXGW WenKai",
     label: "楷体",
+    metrics: { scale: 68, offset: 0 },
   },
   song: {
     stack: '"Noto Serif SC", "Songti SC", "STSong", "SimSun", serif',
@@ -73,6 +75,7 @@ export const FONTS: Record<string, FontOption> = {
     stack: '"Liu Jian Mao Cao", "KaiTi", cursive',
     webFamily: "Liu Jian Mao Cao",
     label: "刘健毛草",
+    metrics: { scale: 78, offset: 0 },
   },
   xiaowei: {
     stack: '"ZCOOL XiaoWei", "KaiTi", serif',
@@ -94,142 +97,170 @@ export const FONTS: Record<string, FontOption> = {
     stack: '"田英章楷书", "KaiTi", serif',
     webFamily: "田英章楷书",
     label: "田英章楷书（近似）",
+    metrics: { scale: 75, offset: 0 },
   },
   tian_xing: {
     stack: '"田英章行书", "KaiTi", cursive',
     webFamily: "田英章行书",
     label: "田英章行书",
+    metrics: { scale: 75, offset: 0 },
   },
   pang_kai: {
     stack: '"庞中华楷书", "KaiTi", serif',
     webFamily: "庞中华楷书",
     label: "庞中华楷书",
+    metrics: { scale: 75, offset: 0 },
   },
   pang_xing: {
     stack: '"庞中华行书", "KaiTi", cursive',
     webFamily: "庞中华行书",
     label: "庞中华行书",
+    metrics: { scale: 52, offset: 5 },
   },
   sima_xing: {
     stack: '"司马彦行书", "KaiTi", cursive',
     webFamily: "司马彦行书",
     label: "司马彦行书",
+    metrics: { scale: 65, offset: 0 },
   },
   jxp_kai: {
     stack: '"荆霄鹏楷书", "KaiTi", serif',
     webFamily: "荆霄鹏楷书",
     label: "荆霄鹏楷书（近似）",
+    metrics: { scale: 90, offset: 8 },
   },
   jxp_xingkai: {
     stack: '"荆霄鹏行楷", "KaiTi", cursive',
     webFamily: "荆霄鹏行楷",
     label: "荆霄鹏行楷",
+    metrics: { scale: 80, offset: 0 },
   },
   hy_shoujin: {
     stack: '"汉仪瘦金书", "KaiTi", serif',
     webFamily: "汉仪瘦金书",
     label: "汉仪瘦金书",
+    metrics: { scale: 75, offset: 0 },
   },
   jbr_hand: {
     stack: '"井柏然手写", "KaiTi", cursive',
     webFamily: "井柏然手写",
     label: "井柏然手写（网传版）",
+    metrics: { scale: 80, offset: 0 },
   },
   momo_zhiyuan: {
     stack: '"默陌纸鸢行草", "KaiTi", cursive',
     webFamily: "默陌纸鸢行草",
     label: "默陌纸鸢行草",
+    metrics: { scale: 60, offset: 0 },
   },
   xinye_nian: {
     stack: '"新叶念体", "KaiTi", cursive',
     webFamily: "新叶念体",
     label: "新叶念体",
+    metrics: { scale: 78, offset: 0 },
   },
   yrd_zhushi: {
     stack: '"杨任东竹石体", "KaiTi", serif',
     webFamily: "杨任东竹石体",
     label: "杨任东竹石体",
+    metrics: { scale: 78, offset: 0 },
   },
   rmj_kai: {
     stack: '"瑞美加张清平楷书", "KaiTi", serif',
     webFamily: "瑞美加张清平楷书",
     label: "瑞美加张清平楷书",
+    metrics: { scale: 86, offset: 0 },
   },
   rmj_xing: {
     stack: '"瑞美加张清平行书", "KaiTi", cursive',
     webFamily: "瑞美加张清平行书",
     label: "瑞美加张清平行书",
+    metrics: { scale: 85, offset: 0 },
   },
   pinru_hand: {
     stack: '"品如手写体", "KaiTi", cursive',
     webFamily: "品如手写体",
     label: "品如手写体",
+    metrics: { scale: 85, offset: 0 },
   },
   hkh_hand: {
     stack: '"黄凯桦手写体", "KaiTi", cursive',
     webFamily: "黄凯桦手写体",
     label: "黄凯桦手写体",
+    metrics: { scale: 78, offset: 0 },
   },
   qingshu: {
     stack: '"情书体", "KaiTi", cursive',
     webFamily: "情书体",
     label: "情书体",
+    metrics: { scale: 65, offset: 0 },
   },
   tamanegi: {
     stack: '"玉葱楷书", "LXGW WenKai", "KaiTi", serif',
     webFamily: "玉葱楷书",
     label: "玉葱楷书（日式）",
+    metrics: { scale: 62, offset: 0 },
   },
   zhengfeng: {
     stack: '"正風毛筆", "KaiTi", serif',
     webFamily: "正風毛筆",
     label: "正風毛筆",
+    metrics: { scale: 78, offset: 0 },
   },
   moda: {
     stack: '"莫大毛筆", "KaiTi", serif',
     webFamily: "莫大毛筆",
     label: "莫大毛筆",
+    metrics: { scale: 78, offset: 0 },
   },
   simkai: {
     stack: '"Windows 楷体", "KaiTi", serif',
     webFamily: "Windows 楷体",
     label: "Windows 楷体",
+    metrics: { scale: 68, offset: 0 },
   },
   // ---- 英文练习字体 ----
   en_hengshui: {
     stack: '"英文衡水体", "Times New Roman", serif',
     webFamily: "英文衡水体",
     label: "英文衡水体",
+    metrics: { scale: 65, offset: -6 },
   },
   en_bangbang: {
     stack: '"南湘棒棒体", "Comic Sans MS", cursive',
     webFamily: "南湘棒棒体",
     label: "南湘棒棒体",
+    metrics: { scale: 82, offset: -6 },
   },
   en_bangbang_step: {
     stack: '"棒棒体描红", "Comic Sans MS", cursive',
     webFamily: "棒棒体描红",
     label: "棒棒体描红",
+    metrics: { scale: 80, offset: -6 },
   },
   en_mugun: {
     stack: '"英文木棍体", "Arial", sans-serif',
     webFamily: "英文木棍体",
     label: "英文木棍体",
+    metrics: { scale: 76, offset: 0 },
   },
   en_yilin: {
     stack: '"译林棒棒体", "Arial", sans-serif',
     webFamily: "译林棒棒体",
     label: "译林棒棒体",
+    metrics: { scale: 80, offset: 7 },
   },
   en_comic: {
     stack: '"Comic Sans 斜体", "Comic Sans MS", cursive',
     webFamily: "Comic Sans 斜体",
     label: "Comic Sans 斜体",
+    metrics: { scale: 62, offset: 0 },
   },
   en_italic: {
     stack: '"英文斜体", "Times New Roman", serif',
     webFamily: "英文斜体",
     label: "英文斜体",
+    metrics: { scale: 85, offset: 0 },
   },
   bihua_kai: {
     stack: '"笔画楷体", "KaiTi", serif',
@@ -455,6 +486,19 @@ export function fontStack(key: string): string {
     return `"${custom}", "KaiTi", "STKaiti", "Kaiti SC", "Songti SC", serif`;
   }
   return FONTS[key]?.stack ?? FONTS.kaiti.stack;
+}
+
+/** 取某字体的标定（无标定者 scale 为 null、offset 为 0）。
+ *  scale：建议字号%，切换字体时套用到「字体大小」；offset：基线垂直修正（字号 × offset%）。 */
+export function fontMetrics(key: string): {
+  scale: number | null;
+  offset: number;
+} {
+  const m = FONTS[key]?.metrics;
+  if (m) return { scale: m.scale, offset: m.offset };
+  const custom = customLocalFamily(key);
+  if (custom) return { scale: null, offset: 0 };
+  return { scale: null, offset: 0 };
 }
 
 /** 取某字体的显示名 */
