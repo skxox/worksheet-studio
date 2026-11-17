@@ -140,3 +140,40 @@
   src: url("/fonts/en-italic.woff2") format("woff2");
   font-display: swap;
 }
+
+/* 拼音 / 笔画 / 控笔专用字体（woff2） */
+@font-face {
+  font-family: "拼音字体一";
+  src: url("/fonts/py-1.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "拼音字体二";
+  src: url("/fonts/py-2.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "拼音文楷轻";
+  src: url("/fonts/py-wenkai.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "拼音常规体";
+  src: url("/fonts/py-regular.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "拼音笔顺体";
+  src: url("/fonts/py-step.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "笔画楷体";
+  src: url("/fonts/bihua-kaiti.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "控笔图案体";
+  src: url("/fonts/pen-control.woff2") format("woff2");
+  font-display: swap;
+}

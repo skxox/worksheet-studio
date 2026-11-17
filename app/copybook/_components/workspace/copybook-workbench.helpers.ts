@@ -21,6 +21,7 @@ import {
   type RenderMode,
   type StrokeDraftRow,
 } from "../../copybook-config";
+import { PINYIN_FONTS } from "@/lib/fonts";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -133,6 +134,9 @@ export function sanitizeCopybookSettings(
         ? settings.highlightColor
         : "#1f2937",
     showPinyin: settings.showPinyin !== false,
+    pinyinFont: PINYIN_FONTS.some((f) => f.key === settings.pinyinFont)
+      ? settings.pinyinFont
+      : "py1",
     showStroke: settings.showStroke === true,
     highlightFirst: settings.highlightFirst !== false,
     highlightCount: clamp(

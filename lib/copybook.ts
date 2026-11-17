@@ -4,7 +4,7 @@ import {
   type GridType,
   type MarginPx,
 } from "@/types";
-import { fontStack } from "@/lib/fonts";
+import { fontStack, pinyinFontSpec, type PinyinFontSpec } from "@/lib/fonts";
 import {
   mmToPx,
   placeCenteredGridBlock,
@@ -259,21 +259,26 @@ function drawPinyinText(
   h: number,
   maxW: number,
   color: string,
+  spec?: PinyinFontSpec,
 ) {
   if (!py) return;
+  const s = spec ?? { family: "", scale: 66, offset: 0 };
+  const family = s.family
+    ? `"${s.family}", ui-sans-serif, sans-serif`
+    : "ui-sans-serif, system-ui, sans-serif";
   const gap = h / 3;
   ctx.save();
   ctx.fillStyle = color;
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  // 字号约为行高的 0.66：让小写 x-height 正好填满中间格（一格 = h/3）
-  let fs = h * 0.66;
-  ctx.font = `${fs}px ui-sans-serif, system-ui, sans-serif`;
+  // 专用拼音字体按各自 scale 定字号（为四线三格定制）；宽度超格时收缩
+  let fs = h * (s.scale / 100);
+  ctx.font = `${fs}px ${family}`;
   while (ctx.measureText(py).width > maxW && fs > 8) {
     fs -= 1;
-    ctx.font = `${fs}px ui-sans-serif, system-ui, sans-serif`;
+    ctx.font = `${fs}px ${family}`;
   }
-  ctx.fillText(py, cx, y + 2 * gap);
+  ctx.fillText(py, cx, y + 2 * gap + (s.offset / 100) * fs);
   ctx.restore();
 }
 
@@ -447,6 +452,7 @@ function drawWordCopybook(
           auxRowH,
           cell - 4,
           practiceCellLook(settings, index).color,
+          pinyinFontSpec(settings.pinyinFont),
         );
       });
       y += auxRowH;
@@ -905,6 +911,7 @@ function drawCharacterCopybook(
             pinyinRowH,
             cell - 4,
             practiceCellLook(settings, idx).color,
+            pinyinFontSpec(settings.pinyinFont),
           );
         }
       }
@@ -982,6 +989,8 @@ function drawPinyinCopybook(
   );
   const fontSize = rowHeight * (settings.fontScale / 100);
   const baselineOffset = (settings.vOffset / 100) * rowHeight;
+  // 拼音模板的字形用拼音专用字体（四线三格定制字形），字号仍由「字体大小」滑杆控制
+  const pyFamily = pinyinFontSpec(settings.pinyinFont).family;
 
   const drawRow = (characters: string[], y: number) => {
     ctx.save();
@@ -1013,6 +1022,10 @@ function drawPinyinCopybook(
 
     if (characters.length > 0 && sampleLimit > 0) {
       setFont(ctx, settings, fontSize);
+      if (pyFamily) {
+        const w = settings.fontWeight === "bold" ? "bold " : "";
+        ctx.font = `${w}${fontSize}px "${pyFamily}", ui-sans-serif, sans-serif`;
+      }
       for (let column = 0; column < sampleLimit; column++) {
         const character = characters[column % characters.length];
         const look = practiceCellLook(settings, column);

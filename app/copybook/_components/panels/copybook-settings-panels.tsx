@@ -5,6 +5,7 @@ import {
   COMMON_FONT_OPTIONS,
   GRID_SIZES,
   GRID_TYPES,
+  PINYIN_FONT_OPTIONS,
   fontOptionsForType,
   type RenderMode,
 } from "../../copybook-config";
@@ -518,6 +519,14 @@ export function FontSettingsPanel({
         onCustomLocalFontChange={onCustomLocalFontChange}
         onApplyCustomLocalFont={onApplyCustomLocalFont}
       />
+      {(settings.type === "pinyin" || settings.showPinyin) && (
+        <CompactSelectRow
+          label="拼音字体"
+          value={settings.pinyinFont ?? "py1"}
+          options={PINYIN_FONT_OPTIONS}
+          onValueChange={(value) => updateSetting("pinyinFont", value)}
+        />
+      )}
       <CompactSelectRow
         label="字体粗细"
         value={settings.fontWeight}

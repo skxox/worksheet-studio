@@ -231,6 +231,16 @@ export const FONTS: Record<string, FontOption> = {
     webFamily: "英文斜体",
     label: "英文斜体",
   },
+  bihua_kai: {
+    stack: '"笔画楷体", "KaiTi", serif',
+    webFamily: "笔画楷体",
+    label: "笔画楷体",
+  },
+  pen_control: {
+    stack: '"控笔图案体", "KaiTi", serif',
+    webFamily: "控笔图案体",
+    label: "控笔图案体",
+  },
   local_kaiti: localFontOption("系统楷体", "KaiTi"),
   local_stkaiti: localFontOption("华文楷体", "STKaiti"),
   local_kaitisc: localFontOption("Kaiti SC", "Kaiti SC"),
@@ -306,11 +316,13 @@ export const COMMON_FONT_KEYS = [
   "en_yilin",
   "en_comic",
   "en_italic",
+  "bihua_kai",
+  "pen_control",
 ] as const;
 
-/** 字体适用的模板类别（对齐主流字帖工具的 types 设计：cn 中文 / en 英文 / num 数字）。
+/** 字体适用的模板类别（对齐主流字帖工具的 types 设计：cn 中文 / en 英文 / num 数字 / py 拼音）。
  *  未列出的键默认只适用于中文模板。 */
-export type FontTarget = "cn" | "en" | "num";
+export type FontTarget = "cn" | "en" | "num" | "py";
 
 const FONT_TARGETS: Partial<Record<string, FontTarget[]>> = {
   // 中文里同时适合英文/数字模板的（与参考站同款标记）
@@ -336,6 +348,68 @@ export function fontKeysForTarget(target: FontTarget): string[] {
   return COMMON_FONT_KEYS.filter((key) =>
     (FONT_TARGETS[key] ?? ["cn"]).includes(target),
   );
+}
+
+/** 拼音专用字体：为四线三格定制的字形，各带字号比例与基线偏移（参考站实测值）。 */
+export interface PinyinFontSpec {
+  key: string;
+  /** CSS font-family；空串表示回退系统无衬线 */
+  family: string;
+  /** 字号 = 拼音行高 × scale% */
+  scale: number;
+  /** 基线垂直偏移 = 字号 × offset% */
+  offset: number;
+  label: string;
+}
+
+export const PINYIN_FONTS: PinyinFontSpec[] = [
+  {
+    key: "py1",
+    family: "拼音字体一",
+    scale: 60,
+    offset: -12,
+    label: "拼音字体一",
+  },
+  {
+    key: "py2",
+    family: "拼音字体二",
+    scale: 62,
+    offset: -3,
+    label: "拼音字体二",
+  },
+  {
+    key: "py_wenkai",
+    family: "拼音文楷轻",
+    scale: 62,
+    offset: -22,
+    label: "拼音文楷轻",
+  },
+  {
+    key: "py_regular",
+    family: "拼音常规体",
+    scale: 82,
+    offset: -30,
+    label: "拼音常规体",
+  },
+  {
+    key: "py_step",
+    family: "拼音笔顺体",
+    scale: 82,
+    offset: -30,
+    label: "拼音笔顺体",
+  },
+  {
+    key: "system",
+    family: "",
+    scale: 66,
+    offset: 0,
+    label: "系统默认",
+  },
+];
+
+/** 取拼音字体规格；无效或未设置时回退第一款。 */
+export function pinyinFontSpec(key?: string): PinyinFontSpec {
+  return PINYIN_FONTS.find((f) => f.key === key) ?? PINYIN_FONTS[0];
 }
 
 export const LOCAL_FONT_KEYS = [

@@ -3,6 +3,7 @@ import {
   fontStack,
   COMMON_FONT_KEYS,
   fontKeysForTarget,
+  PINYIN_FONTS,
   type FontTarget,
 } from "@/lib/fonts";
 import { STROKE_CHAR_TO_PATTERN } from "@/lib/copybook";
@@ -95,6 +96,12 @@ export function fontOptionsForType(type: CopybookType) {
     preview: fontStack(key),
   }));
 }
+
+/** 拼音专用字体选项（拼音带与拼音模板） */
+export const PINYIN_FONT_OPTIONS = PINYIN_FONTS.map((f) => ({
+  value: f.key,
+  label: f.label,
+}));
 
 export const DEFAULT_CONTENT: Record<CopybookType, string> = {
   character: "你好世界",
@@ -218,6 +225,7 @@ export function createDefaultSettings(
     color: "#1f2937",
     highlightColor: "#1f2937",
     showPinyin: false,
+    pinyinFont: "py1",
     showStroke: false,
     highlightFirst: true,
     highlightCount: 1,

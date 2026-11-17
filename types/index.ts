@@ -113,6 +113,8 @@ export interface CopybookSettings {
 
   // —— 开关 ——
   showPinyin: boolean;
+  /** 拼音带/拼音模板使用的专用字体键（见 lib/fonts.ts 的 PINYIN_FONTS） */
+  pinyinFont?: string;
   showStroke: boolean; // 显示笔顺（逐笔数据，缺失字回退字体）
   highlightFirst: boolean; // 高亮示范总开关：开启后每行前 highlightCount 个练习字作实心示范
   highlightCount: number; // 高亮示范数量：开启 highlightFirst 时，每行前 N 字作实心示范

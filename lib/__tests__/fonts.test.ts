@@ -4,6 +4,7 @@ import {
   fontLabel,
   fontWebFamily,
   fontKeysForTarget,
+  pinyinFontSpec,
   FONTS,
 } from "@/lib/fonts";
 
@@ -72,5 +73,20 @@ describe("fontKeysForTarget（按模板类别的字体清单）", () => {
     expect(num).toContain("en_yilin");
     expect(num).not.toContain("en_comic");
     expect(num).not.toContain("kaiti");
+  });
+});
+
+describe("拼音字体（PINYIN_FONTS / pinyinFontSpec）", () => {
+  it("默认与无效键回退第一款", () => {
+    expect(pinyinFontSpec().key).toBe("py1");
+    expect(pinyinFontSpec("nope").key).toBe("py1");
+    expect(pinyinFontSpec("system").family).toBe("");
+  });
+  it("各款带 scale/offset 标定（参考站实测值）", () => {
+    const py2 = pinyinFontSpec("py2");
+    expect(py2.scale).toBe(62);
+    expect(py2.offset).toBe(-3);
+    const regular = pinyinFontSpec("py_regular");
+    expect(regular.scale).toBe(82);
   });
 });
