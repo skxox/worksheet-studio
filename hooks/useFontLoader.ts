@@ -9,6 +9,17 @@ import { ensureFontLoaded, fontWebFamily } from "@/lib/fonts";
  */
 export function useFontLoader(fontKey: string, size: number = 48): boolean {
   const family = fontWebFamily(fontKey);
+  return useFontFamilyLoader(family, size);
+}
+
+/**
+ * 按 CSS family 直载（用于不在主字体注册表里的字体，如拼音专用字体）。
+ * Canvas 不会自动触发网页字体加载——没预加载就静默用回退字体渲染。
+ */
+export function useFontFamilyLoader(
+  family: string | null,
+  size: number = 48,
+): boolean {
   const [loadedFamily, setLoadedFamily] = useState<string | null>(null);
 
   useEffect(() => {

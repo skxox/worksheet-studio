@@ -14,7 +14,8 @@ import { PrintCanvasButton } from "@/components/workspace/PrintCanvasButton";
 import { Button } from "@/components/ui/button";
 import { useCanvas } from "@/hooks/useCanvas";
 import { useExport } from "@/hooks/useExport";
-import { useFontLoader } from "@/hooks/useFontLoader";
+import { useFontLoader, useFontFamilyLoader } from "@/hooks/useFontLoader";
+import { pinyinFontSpec } from "@/lib/fonts";
 import { usePersistentState } from "@/hooks/usePersistentState";
 import { useStrokeData } from "@/hooks/useStrokeData";
 import { drawCopybook } from "@/lib/copybook";
@@ -122,6 +123,10 @@ export function CopybookWorkbenchShell({
   }
 
   const fontReady = useFontLoader(safeSettings.fontFamily);
+  // 拼音专用字体按 family 直载：Canvas 不触发字体加载，缺了这步会一直用回退字体
+  const pinyinFontReady = useFontFamilyLoader(
+    pinyinFontSpec(safeSettings.pinyinFont).family || null,
+  );
   const strokesReady = useStrokeData(
     safeSettings.content,
     safeSettings.showStroke,
@@ -147,7 +152,7 @@ export function CopybookWorkbenchShell({
     // 字体/笔顺数据就绪后由 useCanvas 自动重绘一次，避免手动 redraw 叠加成多次重绘。
     // 故 exhaustive-deps 视其为“多余依赖”，此处有意保留并放行。
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [safeSettings, fontReady, strokesReady],
+    [safeSettings, fontReady, pinyinFontReady, strokesReady],
   );
 
   const { canvasRef } = useCanvas({
