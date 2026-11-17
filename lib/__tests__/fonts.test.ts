@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { fontStack, fontLabel, fontWebFamily, FONTS } from "@/lib/fonts";
+import {
+  fontStack,
+  fontLabel,
+  fontWebFamily,
+  fontKeysForTarget,
+  FONTS,
+} from "@/lib/fonts";
 
 describe("fontStack", () => {
   it("returns the registered stack for a known key", () => {
@@ -43,5 +49,28 @@ describe("fontWebFamily", () => {
   });
   it("returns null for custom local: families", () => {
     expect(fontWebFamily("local:MyHandwriting")).toBeNull();
+  });
+});
+
+describe("fontKeysForTarget（按模板类别的字体清单）", () => {
+  it("中文模板包含基础与字帖中文字体", () => {
+    const cn = fontKeysForTarget("cn");
+    expect(cn).toContain("kaiti");
+    expect(cn).toContain("tian_kai");
+    expect(cn).toContain("simkai");
+  });
+  it("英文模板含英文练习字体与跨类中文字体，不含纯中文字体", () => {
+    const en = fontKeysForTarget("en");
+    expect(en).toContain("en_hengshui");
+    expect(en).toContain("qingshu"); // 跨类（cn+en+num）
+    expect(en).not.toContain("kaiti");
+    expect(en).not.toContain("tian_kai");
+  });
+  it("数字模板只含标记 num 的字体", () => {
+    const num = fontKeysForTarget("num");
+    expect(num).toContain("en_mugun");
+    expect(num).toContain("en_yilin");
+    expect(num).not.toContain("en_comic");
+    expect(num).not.toContain("kaiti");
   });
 });

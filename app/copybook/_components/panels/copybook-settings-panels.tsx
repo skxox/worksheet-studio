@@ -5,6 +5,7 @@ import {
   COMMON_FONT_OPTIONS,
   GRID_SIZES,
   GRID_TYPES,
+  fontOptionsForType,
   type RenderMode,
 } from "../../copybook-config";
 import {
@@ -493,12 +494,26 @@ export function FontSettingsPanel({
   ) => void;
   mode: "grid" | "line" | "english-grid";
 }) {
+  // 按模板类型过滤字体列表（中文/英文/数字各见其类）；当前值若不在列表中则追加，
+  // 避免历史持久化设置在切换模板后选项“消失”
+  const typeFontOptions = fontOptionsForType(settings.type);
+  const commonOptions = typeFontOptions.some(
+    (option) => option.value === settings.fontFamily,
+  )
+    ? typeFontOptions
+    : [
+        ...typeFontOptions,
+        ...COMMON_FONT_OPTIONS.filter(
+          (option) => option.value === settings.fontFamily,
+        ),
+      ];
+
   return (
     <PanelCard>
       <FontPickerCard
         value={settings.fontFamily}
         customLocalFont={customLocalFont}
-        commonOptions={COMMON_FONT_OPTIONS}
+        commonOptions={commonOptions}
         onValueChange={(value: string) => updateSetting("fontFamily", value)}
         onCustomLocalFontChange={onCustomLocalFontChange}
         onApplyCustomLocalFont={onApplyCustomLocalFont}

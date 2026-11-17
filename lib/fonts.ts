@@ -195,6 +195,42 @@ export const FONTS: Record<string, FontOption> = {
     webFamily: "Windows 楷体",
     label: "Windows 楷体",
   },
+  // ---- 英文练习字体 ----
+  en_hengshui: {
+    stack: '"英文衡水体", "Times New Roman", serif',
+    webFamily: "英文衡水体",
+    label: "英文衡水体",
+  },
+  en_bangbang: {
+    stack: '"南湘棒棒体", "Comic Sans MS", cursive',
+    webFamily: "南湘棒棒体",
+    label: "南湘棒棒体",
+  },
+  en_bangbang_step: {
+    stack: '"棒棒体描红", "Comic Sans MS", cursive',
+    webFamily: "棒棒体描红",
+    label: "棒棒体描红",
+  },
+  en_mugun: {
+    stack: '"英文木棍体", "Arial", sans-serif',
+    webFamily: "英文木棍体",
+    label: "英文木棍体",
+  },
+  en_yilin: {
+    stack: '"译林棒棒体", "Arial", sans-serif',
+    webFamily: "译林棒棒体",
+    label: "译林棒棒体",
+  },
+  en_comic: {
+    stack: '"Comic Sans 斜体", "Comic Sans MS", cursive',
+    webFamily: "Comic Sans 斜体",
+    label: "Comic Sans 斜体",
+  },
+  en_italic: {
+    stack: '"英文斜体", "Times New Roman", serif',
+    webFamily: "英文斜体",
+    label: "英文斜体",
+  },
   local_kaiti: localFontOption("系统楷体", "KaiTi"),
   local_stkaiti: localFontOption("华文楷体", "STKaiti"),
   local_kaitisc: localFontOption("Kaiti SC", "Kaiti SC"),
@@ -263,7 +299,44 @@ export const COMMON_FONT_KEYS = [
   "zhengfeng",
   "moda",
   "simkai",
+  "en_hengshui",
+  "en_bangbang",
+  "en_bangbang_step",
+  "en_mugun",
+  "en_yilin",
+  "en_comic",
+  "en_italic",
 ] as const;
+
+/** 字体适用的模板类别（对齐主流字帖工具的 types 设计：cn 中文 / en 英文 / num 数字）。
+ *  未列出的键默认只适用于中文模板。 */
+export type FontTarget = "cn" | "en" | "num";
+
+const FONT_TARGETS: Partial<Record<string, FontTarget[]>> = {
+  // 中文里同时适合英文/数字模板的（与参考站同款标记）
+  sima_xing: ["cn", "en", "num"],
+  hy_shoujin: ["cn", "en", "num"],
+  xinye_nian: ["cn", "en", "num"],
+  yrd_zhushi: ["cn", "en", "num"],
+  momo_zhiyuan: ["cn", "en", "num"],
+  qingshu: ["cn", "en", "num"],
+  jbr_hand: ["cn", "en", "num"],
+  // 英文练习字体
+  en_hengshui: ["en"],
+  en_bangbang: ["en"],
+  en_bangbang_step: ["en"],
+  en_comic: ["en"],
+  en_mugun: ["en", "num"],
+  en_yilin: ["en", "num"],
+  en_italic: ["en", "num"],
+};
+
+/** 取适用某模板类别的字体键列表（保持注册表顺序）。 */
+export function fontKeysForTarget(target: FontTarget): string[] {
+  return COMMON_FONT_KEYS.filter((key) =>
+    (FONT_TARGETS[key] ?? ["cn"]).includes(target),
+  );
+}
 
 export const LOCAL_FONT_KEYS = [
   "local_kaiti",

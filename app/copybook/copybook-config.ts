@@ -1,4 +1,10 @@
-import { fontLabel, fontStack, COMMON_FONT_KEYS } from "@/lib/fonts";
+import {
+  fontLabel,
+  fontStack,
+  COMMON_FONT_KEYS,
+  fontKeysForTarget,
+  type FontTarget,
+} from "@/lib/fonts";
 import { STROKE_CHAR_TO_PATTERN } from "@/lib/copybook";
 import { PAPER_SIZES } from "@/lib/paper";
 import {
@@ -66,6 +72,29 @@ export const COMMON_FONT_OPTIONS = COMMON_FONT_KEYS.map((key) => ({
   label: fontLabel(key),
   preview: fontStack(key),
 }));
+
+/** 各字帖类型对应的字体类别：中文 / 英文 / 数字模板各自显示适用的字体列表 */
+const TYPE_FONT_TARGET: Record<CopybookType, FontTarget> = {
+  character: "cn",
+  word: "cn",
+  paragraph: "cn",
+  stroke: "cn",
+  pinyin: "cn",
+  control: "cn",
+  "english-char": "en",
+  "english-word": "en",
+  "english-para": "en",
+  number: "num",
+};
+
+/** 某字帖类型可用的字体选项（按字体注册表顺序） */
+export function fontOptionsForType(type: CopybookType) {
+  return fontKeysForTarget(TYPE_FONT_TARGET[type]).map((key) => ({
+    value: key,
+    label: fontLabel(key),
+    preview: fontStack(key),
+  }));
+}
 
 export const DEFAULT_CONTENT: Record<CopybookType, string> = {
   character: "你好世界",
@@ -167,7 +196,11 @@ export function createDefaultSettings(
   return {
     type,
     content: DEFAULT_CONTENT[type],
-    fontFamily: isPinyin ? "hei" : "kaiti",
+    fontFamily: type.startsWith("english")
+      ? "en_hengshui"
+      : isPinyin
+        ? "hei"
+        : "kaiti",
     fontWeight: "normal",
     gridType: isLineTemplate ? "line" : "tian",
     gridSize: 10,

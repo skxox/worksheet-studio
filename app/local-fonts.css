@@ -103,3 +103,40 @@
   src: url("/fonts/simkai.ttf") format("truetype");
   font-display: swap;
 }
+
+/* 英文练习字体（woff2） */
+@font-face {
+  font-family: "英文衡水体";
+  src: url("/fonts/en-hengshui.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "南湘棒棒体";
+  src: url("/fonts/en-bangbang.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "棒棒体描红";
+  src: url("/fonts/en-bangbang-step.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "英文木棍体";
+  src: url("/fonts/en-mugun.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "译林棒棒体";
+  src: url("/fonts/en-yilin.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Comic Sans 斜体";
+  src: url("/fonts/en-comic.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "英文斜体";
+  src: url("/fonts/en-italic.woff2") format("woff2");
+  font-display: swap;
+}
